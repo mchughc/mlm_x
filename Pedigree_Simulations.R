@@ -5,7 +5,16 @@ source("estVarComp.R")
 library(GWASTools)
 
 ############################
+## Contents:
+# 1. Estimate X chr relatedness
+# 2. Estimate for autosomal relatedness 
+# 10. Make histograms of X chr KC estimates 
 
+
+
+
+#####
+# 1. Estimate X chr relatedness
 
 FAMNUM1=60;
 unrelateds=200
@@ -91,7 +100,7 @@ for(i in 1:nrow(genoX)){
 }
 summary(diag(kinship35))
 #Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#0.9968  1.0000  1.0010  1.0010  1.0020  1.0040 
+#0.9726  0.9922  0.9999  0.9992  1.0050  1.0340 
 
 
 library(grDevices)
@@ -99,7 +108,7 @@ pdf("xchr_kc_estimatedVsTrue.pdf")
 diffMat <- trueKinXn[lower.tri(trueKinXn,diag=FALSE)]-kinship[lower.tri(kinship,diag=FALSE)]
 x <- trueKinXn[lower.tri(trueKinXn,diag=FALSE)]
 plot(jitter(x), diffMat,
-     xlab="Expected KC",ylab="Expected KC - Estimated KC",
+     xlab="Theoretical KC",ylab="Theoretical KC - Estimated KC",
      xlim=c(0,0.6),col=adjustcolor("purple",alpha=0.6),pch=19)
 points(jitter(x),
        x-kinship35[lower.tri(kinship100K,diag=FALSE)], col=adjustcolor("orange",alpha=0.6),pch=19)
@@ -108,7 +117,7 @@ points(jitter(x),
 points(jitter(x),
        x-kinship100K[lower.tri(kinship100K,diag=FALSE)], col=adjustcolor("cyan",alpha=0.6),pch=19)
 abline(h=0)
-legend("topright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),pch=19)
+legend(0.08,-0.043,c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),pch=19)
 dev.off()
 
 
@@ -116,7 +125,7 @@ dev.off()
 pdf("xchr_kc_estimatedVsTrue_FF.pdf")
 plot(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]),
      trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]-kinship[trueKinX$SEX=="F",trueKinX$SEX=="F"],
-     xlab="Expected KC",ylab="Expected KC - Estimated KC",ylim=c(-0.07,0.06),
+     xlab="Expected KC",ylab="Expected KC - Estimated KC",
      xlim=c(0,0.5),col=adjustcolor("purple",alpha=0.6),pch=19)
 points(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]),
        trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]-kinship35[trueKinX$SEX=="F",trueKinX$SEX=="F"],
@@ -135,26 +144,23 @@ dev.off()
 pdf("xchr_kc_estimatedVsTrue_FM.pdf")
 plot(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]),
      trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]-kinship[trueKinX$SEX=="F",trueKinX$SEX=="M"],
-     xlab="Expected KC",ylab="Expected KC - Estimated KC",ylim=c(-0.075,0.075),
+     xlab="Expected KC",ylab="Expected KC - Estimated KC",
      col=adjustcolor("purple",alpha=0.6),pch=19)
 points(jitter(trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]),
        trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]-kinship[trueKinX$SEX=="M",trueKinX$SEX=="F"], 
        col=adjustcolor("purple",alpha=0.6),pch=19)
-
 points(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]),
        trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]-kinship35[trueKinX$SEX=="F",trueKinX$SEX=="M"], 
        col=adjustcolor("orange",alpha=0.6),pch=19)
 points(jitter(trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]),
        trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]-kinship35[trueKinX$SEX=="M",trueKinX$SEX=="F"], 
        col=adjustcolor("orange",alpha=0.6),pch=19)
-
 points(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]),
        trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]-kinship10K[trueKinX$SEX=="F",trueKinX$SEX=="M"], 
        col=adjustcolor("red",alpha=0.6),pch=19)
 points(jitter(trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]),
        trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]-kinship10K[trueKinX$SEX=="M",trueKinX$SEX=="F"], 
        col=adjustcolor("red",alpha=0.6),pch=19)
-
 points(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]),
        trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]-kinship100K[trueKinX$SEX=="F",trueKinX$SEX=="M"],
        col=adjustcolor("cyan",alpha=0.6),pch=19)
@@ -162,7 +168,7 @@ points(jitter(trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]),
        trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]-kinship100K[trueKinX$SEX=="M",trueKinX$SEX=="F"],
        col=adjustcolor("cyan",alpha=0.6),pch=19)
 abline(h=0)
-legend("topright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),pch=19)
+legend("bottomright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),pch=19)
 dev.off()
 
 pdf("xchr_kc_estimatedVsTrue_MM.pdf")
@@ -191,7 +197,7 @@ save(kinship100K,file="xchr_kinshipMatrix/kinship_100kSNPs.RData")
 
 
 ####
-# estimate for autosomal relatedness now
+# 2. Estimate for autosomal relatedness 
 
 # kinship matrix
 library(kinship2)
@@ -240,6 +246,18 @@ summary(diag(kinship100K))
 #Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 #0.9980  0.9996  1.0010  1.0020  1.0030  1.0070 
 
+# finally 3500 SNPs
+geno <- 2*Family_alleles_Nmarker(rep(f1,3500),3500)
+kinship3500 <- matrix(NA,nrow=16,ncol=16)
+for(i in 1:nrow(geno)){
+  for(j in 1:nrow(geno)){
+    kinship3500[i,j] <- getKin(geno[i,],geno[j,],f1)
+  }
+}
+summary(diag(kinship3500))
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.9688  0.9735  0.9833  0.9850  0.9959  1.0070 
+
 pdf("auto_kc_estimatedVsTrue.pdf")
 plot(jitter(kin[lower.tri(kin,diag=FALSE)]),
      -kinship[lower.tri(kinship,diag=FALSE)]+kin[lower.tri(kin,diag=FALSE)],xlab="Expected",
@@ -255,10 +273,28 @@ abline(h=0)
 legend("topright",c("1k SNPs","10k SNPs","100k SNPs"),col=c("purple","red","cyan"),pch=19)
 dev.off()
 
+pdf("auto_kc_estimatedVsTrue_v2.pdf")
+plot(jitter(kin[lower.tri(kin,diag=FALSE)]),
+     -kinship[lower.tri(kinship,diag=FALSE)]+kin[lower.tri(kin,diag=FALSE)],xlab="Expected",
+     ylab="Expected - Observed",
+     xlim=c(0,1),col=adjustcolor("purple",alpha=0.6),pch=19)
+points(jitter(kin[lower.tri(kin,diag=FALSE)]),
+       -kinship3500[lower.tri(kinship3500,diag=FALSE)]+kin[lower.tri(kin,diag=FALSE)],
+       col=adjustcolor("orange",alpha=0.6),pch=19)
+points(jitter(kin[lower.tri(kin,diag=FALSE)]),
+       -kinship10K[lower.tri(kinship10K,diag=FALSE)]+kin[lower.tri(kin,diag=FALSE)],
+       col=adjustcolor("red",alpha=0.6),pch=19)
+points(jitter(kin[lower.tri(kin,diag=FALSE)]),
+       -kinship100K[lower.tri(kinship100K,diag=FALSE)]+kin[lower.tri(kin,diag=FALSE)],
+       col=adjustcolor("cyan",alpha=0.6),pch=19)
+abline(h=0)
+legend("topright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),pch=19)
+dev.off()
+
 save(kinship,file="auto_kinshipMatrix/kinship_1kSNPs.RData")
 save(kinship10K,file="auto_kinshipMatrix/kinship_10kSNPs.RData")
 save(kinship100K,file="auto_kinshipMatrix/kinship_100kSNPs.RData")
-
+save(kinship3500,file="auto_kinshipMatrix/kinship_3500SNPs.RData")
 
 
 #######################
@@ -383,3 +419,74 @@ snpset <- snpgdsLDpruning(gdsobj, sample.id=scan.ids, snp.id=snp.ids,
                           method="corr", slide.max.bp=10*1e6, ld.threshold=0.32, 
                           num.thread=1)
 # 3760 SNPs selected
+
+rm(list=ls())
+
+
+#####
+# Make histograms of X chr KC estimates 
+
+TEMP=c(2,1,2,1,1,1,2,2,1,2,1,2,1,2,1,2)
+SEX=rep(NA,16)
+SEX[TEMP==1]="M"
+SEX[TEMP==2]="F"
+
+tmp <- read.table("pedigree_16individs_output")
+trueKinX <- matrix(NA,nrow=16, ncol=16)
+trueKinX[lower.tri(trueKinX,diag=TRUE)] <- tmp[,"V4"]
+
+diag(trueKinX)[SEX=="F"] <- 0.5
+diag(trueKinX)[SEX=="M"] <- 1
+
+est35 <- get(load("xchr_kinshipMatrix/kinship_3500SNPs.RData"))
+est35[SEX=="F",SEX=="F"] <- 0.5*est35[SEX=="F",SEX=="F"]
+est35[SEX=="F",SEX=="M"] <- (1/sqrt(2))*est35[SEX=="F",SEX=="M"]
+est35[SEX=="M",SEX=="F"] <- (1/sqrt(2))*est35[SEX=="M",SEX=="F"]
+
+# ok, now est35 is transformed GRM estimates to X chr KC estimates
+# trueKinX is lower.tri matrix of theoretical X chr KC estimates
+# make histogram of each relationship type
+
+pdf("hist_xchrKC_byRelType.pdf",width=11)
+par(mfrow=c(2,4))
+toSel <- trueKinX==0
+hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 0",sep=""))
+abline(v=0,col="red",lty=2,lwd=2)
+
+# toSel <- trueKinX==(1/16) # 0.0625
+# hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 1/16",sep=""))
+# abline(v=0.0625,col="red",lty=2,lwd=2)
+
+# toSel <- trueKinX==(3/32) # 0.09375
+# hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 3/32",sep=""))
+# abline(v=0.09375,col="red",lty=2,lwd=2)
+
+toSel <- trueKinX==(1/8) # 0.125
+hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 1/8",sep=""))
+abline(v=0.125,col="red",lty=2,lwd=2)
+
+toSel <- trueKinX==(3/16) # 0.1875
+hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 3/16",sep=""))
+abline(v=0.1875,col="red",lty=2,lwd=2)
+
+toSel <- trueKinX==0.25
+hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 1/4",sep=""))
+abline(v=0.25,col="red",lty=2,lwd=2)
+
+toSel <- trueKinX==(6/16) # 0.375
+hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 6/16",sep=""))
+abline(v=0.375,col="red",lty=2,lwd=2)
+
+toSel <- trueKinX==0.5
+hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 1/2",sep=""))
+abline(v=0.5,col="red",lty=2,lwd=2)
+
+toSel <- trueKinX==1
+hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSel,na.rm=T)," Pairs\nwith Theoretical KC 1",sep=""))
+abline(v=1,col="red",lty=2,lwd=2)
+
+dev.off()
+
+
+
+

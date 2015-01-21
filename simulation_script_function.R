@@ -1,8 +1,6 @@
 
 # script to perform MLM simulations
 
-setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
-
 library(MASS)
 library(corpcor)
 source("sim_phenotype.R")

@@ -108,7 +108,7 @@ INDIV_alleles_NmarkerX<-function(FREQ1,nloci)
 
 Family_alleles_Nmarker<-function(FREQ1,nloci)
 {
-  GENO= matrix(0,nloci,16);
+  GENO= matrix(0,16,nloci);
   
   founder1=1
   founder2=2
@@ -117,66 +117,66 @@ Family_alleles_Nmarker<-function(FREQ1,nloci)
   founder5=5
   
   for(count in 1:5)
-  {GENO[,count]=INDIV_alleles_Nmarker(FREQ1,nloci)}
+  {GENO[count,]=INDIV_alleles_Nmarker(FREQ1,nloci)}
   
   count=5
   
   count=count+1
   sib1=count
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,founder1],GENO[i,founder2])}
+  {GENO[count,i]=alleledrop(GENO[founder1,i],GENO[founder2,i])}
   
   count=count+1
   sib2=count
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,founder1],GENO[i,founder2])}
+  {GENO[count,i]=alleledrop(GENO[founder1,i],GENO[founder2,i])}
   
   count=count+1
   sib3=count
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,founder1],GENO[i,founder2])}
+  {GENO[count,i]=alleledrop(GENO[founder1,i],GENO[founder2,i])}
   
   #SECOND GENERATION FAM1
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib1],GENO[i,founder3])}
+  {GENO[count,i]=alleledrop(GENO[sib1,i],GENO[founder3,i])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib1],GENO[i,founder3])}
+  {GENO[count,i]=alleledrop(GENO[sib1,i],GENO[founder3,i])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib1],GENO[i,founder3])}
+  {GENO[count,i]=alleledrop(GENO[sib1,i],GENO[founder3,i])}
   
   
   #SECOND GENERATION FAM2
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib2],GENO[i,founder4])}
+  {GENO[count,i]=alleledrop(GENO[sib2,i],GENO[founder4,i])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib2],GENO[i,founder4])}
+  {GENO[count,i]=alleledrop(GENO[sib2,i],GENO[founder4,i])}
   
   
   #SECOND GENERATION FAM3
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib3],GENO[i,founder5])}
+  {GENO[count,i]=alleledrop(GENO[sib3,i],GENO[founder5,i])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib3],GENO[i,founder5])}
+  {GENO[count,i]=alleledrop(GENO[sib3,i],GENO[founder5,i])}
   
   
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledrop(GENO[i,sib3],GENO[i,founder5])}
+  {GENO[count,i]=alleledrop(GENO[sib3,i],GENO[founder5,i])}
   
   return(GENO)
   
@@ -187,21 +187,15 @@ Family_alleles_Nmarker<-function(FREQ1,nloci)
 
 Family_alleles_NmarkerX<-function(FREQ1,nloci,SEX)
 {
-  GENO= matrix(0,nloci,16);
+  GENO= matrix(0,16,nloci);
 
-  GENO[,1]=INDIV_alleles_Nmarker(FREQ1,nloci)
-  GENO[,3]=INDIV_alleles_Nmarker(FREQ1,nloci)
-  GENO[,2]=INDIV_alleles_NmarkerX(FREQ1,nloci)
-  GENO[,4]=INDIV_alleles_NmarkerX(FREQ1,nloci)
-  GENO[,5]=INDIV_alleles_NmarkerX(FREQ1,nloci)
-
-#  for(i in 1:5)
-#  {
-#    if(SEX[i]=="F")
-#    {GENO[,i]=INDIV_alleles_Nmarker(FREQ1,nloci)}
-#    if(SEX[i]=="M")
-#    {GENO[,i]=INDIV_alleles_NmarkerX(FREQ1,nloci)}
-#  }
+  for(i in 1:5)
+  {
+    if(SEX[i]=="F")
+    {GENO[i,]=INDIV_alleles_Nmarker(FREQ1,nloci)}
+    if(SEX[i]=="M")
+    {GENO[i,]=INDIV_alleles_NmarkerX(FREQ1,nloci)}
+  }
   
   founder1=1
   founder2=2
@@ -209,57 +203,68 @@ Family_alleles_NmarkerX<-function(FREQ1,nloci,SEX)
   founder4=4
   founder5=5
   
-  count=6
+  count=5
+  count=count+1
   sib1=count
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,founder1],SEX[founder1],GENO[i,founder2],SEX[founder2],SEX[sib1])}
+  {GENO[count,i]=alleledropX(GENO[founder1,i],SEX[founder1],GENO[founder2,i],SEX[founder2],SEX[sib1])}
   
   count=count+1
   sib2=count
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,founder1],SEX[founder1],GENO[i,founder2],SEX[founder2],SEX[sib2])}
+  {GENO[count,i]=alleledropX(GENO[founder1,i],SEX[founder1],GENO[founder2,i],SEX[founder2],SEX[sib2])}
   
   count=count+1
   sib3=count
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,founder1],SEX[founder1],GENO[i,founder2],SEX[founder2],SEX[sib3])}
-
+  {GENO[count,i]=alleledropX(GENO[founder1,i],SEX[founder1],GENO[founder2,i],SEX[founder2],SEX[sib3])}
+  
+  
   
   #SECOND GENERATION FAM1
-  count=count+1
-  for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib1],SEX[sib1],GENO[i,founder3],SEX[founder3],SEX[count])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib1],SEX[sib1],GENO[i,founder3],SEX[founder3],SEX[count])}
+  {GENO[count,i]=alleledropX(GENO[sib1,i],SEX[sib1],GENO[founder3,i],SEX[founder3],SEX[count])}
+  
+  
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib1],SEX[sib1],GENO[i,founder3],SEX[founder3],SEX[count])}
+  {GENO[count,i]=alleledropX(GENO[sib1,i],SEX[sib1],GENO[founder3,i],SEX[founder3],SEX[count])}
+  
+  
+  
+  count=count+1
+  for(i in 1:nloci)
+  {GENO[count,i]=alleledropX(GENO[sib1,i],SEX[sib1],GENO[founder3,i],SEX[founder3],SEX[count])}
+  
+  
   
   #SECOND GENERATION FAM2
-  count=count+1
-  for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib2],SEX[sib2],GENO[i,founder4],SEX[founder4],SEX[count])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib2],SEX[sib2],GENO[i,founder4],SEX[founder4],SEX[count])}
+  {GENO[count,i]=alleledropX(GENO[sib2,i],SEX[sib2],GENO[founder4,i],SEX[founder4],SEX[count])}
+  
+  count=count+1
+  for(i in 1:nloci)
+  {GENO[count,i]=alleledropX(GENO[sib2,i],SEX[sib2],GENO[founder4,i],SEX[founder4],SEX[count])}
   
   
   #SECOND GENERATION FAM3
-  count=count+1
-  for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib3],SEX[sib3],GENO[i,founder5],SEX[founder5],SEX[count])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib3],SEX[sib3],GENO[i,founder5],SEX[founder5],SEX[count])}
+  {GENO[count,i]=alleledropX(GENO[sib3,i],SEX[sib3],GENO[founder5,i],SEX[founder5],SEX[count])}
   
   count=count+1
   for(i in 1:nloci)
-  {GENO[i,count]=alleledropX(GENO[i,sib3],SEX[sib3],GENO[i,founder5],SEX[founder5],SEX[count])}
+  {GENO[count,i]=alleledropX(GENO[sib3,i],SEX[sib3],GENO[founder5,i],SEX[founder5],SEX[count])}
+  
+  count=count+1
+  for(i in 1:nloci)
+  {GENO[count,i]=alleledropX(GENO[sib3,i],SEX[sib3],GENO[founder5,i],SEX[founder5],SEX[count])}
   
   
   return(GENO)
@@ -272,6 +277,9 @@ getKinX <- function(geno1,geno2,sex1,sex2,afreq){
   # takes as arguments the vector of genotypes for individ1, individ2
   # takes the sex for individ1, individ2 as "M" and "F"
   # takes a vector of allele frequencies for all genotypes 
+  
+  # *** CAUTION ***
+  # *** this function assumes male genotypes coded as 0 and 1 *** 
   
   denom = afreq*(1-afreq)
   incl = afreq>0 & afreq<1
