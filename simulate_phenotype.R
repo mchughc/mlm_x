@@ -27,6 +27,16 @@ source("assocTestMixedModel_v7.R")
 # 15. Make power graphs
 # 16. Get type I error from the same results
 # 17. More power simulations
+# 18. Power simulation results
+# 19. Compile all varComp estimates
+# 20. New type I error results
+# 21. Process final round of power simulations
+# 22. Power graph for 10K beta1=0.05 simulations
+# 23. More simulations!
+# 24. Power graph + type I error for 80K beta1=0.05 simulations
+# 25. 1M type I error runs
+# 26. Power graph for beta1=0.07 simulations
+# 27. Type I error rate from 600K runs (for comparison)
 
 
 
@@ -1694,8 +1704,9 @@ save(varCI,file="varEst_power_results_jan13_v5.RData")
 
 rm(list=ls())
 
-# removed the individual files in the model_c_results_power/ folder
+# removed the individual files in the modelC_results_power/ folder
 
+# now do this on my computer, after moving files from server to my laptop
 tmp1 <- get(load("pvals_power_results_jan13.RData"))
 tmp <- get(load("pvals_power_results_jan13_v2.RData"))
 dim(tmp1); dim(tmp) # 18684 12 | 5334 12
@@ -1874,6 +1885,1360 @@ rm(list=ls())
 # qsub -t 1-1500 -N pow007 -q thornton.q batch_model_c_powerCalc_function_007.sh
 # which calls model_c_powerCalc_function_v3.R and writes .Rout for beta1=0.07
 
+# qsub -t 1-1500 -N pow006 -q thornton.q batch_model_c_powerCalc_function_006.sh
+# qsub -t 1-1500 -N pow008 -q thornton.q batch_model_c_powerCalc_function_008.sh
+# qsub -t 1-1500 -N pow009 -q thornton.q batch_model_c_powerCalc_function_009.sh
+# qsub -t 1-1500 -N pow01 -q thornton.q batch_model_c_powerCalc_function_01.sh
+# qsub -t 1-1500 -N pow013 -q thornton.q batch_model_c_powerCalc_function_013.sh
+
+## all results for these are stored in
+# modelC_results_power_1mill/
+
+##
+## do more iterations with 5 causal SNPs per run
+# qsub -t 1-1500 -N pow005 batch_model_c_powerCalc_function_005.sh
+# which calls model_c_powerCalc_function_v4.R and writes .Rout for beta1=0.05
+
+# qsub -t 1-1500 -N pow007 -q thornton.q batch_model_c_powerCalc_function_007.sh
+# which calls model_c_powerCalc_function_v4.R and writes .Rout for beta1=0.07
+
+# qsub -q olga.q -t 1-100 batch_model_c_powerCalc_function_005.sh # started at 9.11; 
+# qsub -t 101-1500 -N pw5_005 -q thornton.q batch_model_c_powerCalc_function_005.sh
+# qsub -t 1-100 -N pw5_006 -q olga.q batch_model_c_powerCalc_function_006.sh
+# qsub -t 101-1500 -N pw5_006 -q bigmem.q batch_model_c_powerCalc_function_006.sh
+# qsub -t 1-1500 -N pw5_007 -q all.q batch_model_c_powerCalc_function_007.sh
+# qsub -t 1-1500 -N pw5_008 -q thornton.q batch_model_c_powerCalc_function_008.sh
+# qsub -t 1-900 -N pw5_009 -q olga.q batch_model_c_powerCalc_function_009.sh
+# qsub -t 901-1500 -N pw5_009 -q thornton.q batch_model_c_powerCalc_function_009.sh
+# qsub -t 1-800 -N pw5_01 -q olga.q batch_model_c_powerCalc_function_01.sh
+# qsub -t 801-1500 -N pw5_01 -q thornton.q batch_model_c_powerCalc_function_01.sh
+# qsub -t 1-1500 -N pw5_013 -q thornton.q batch_model_c_powerCalc_function_013.sh
+
+## all results for these are stored in
+# modelC_results_power/
+
+
+#####
+# 18. Power simulation results
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+# loop through results and make them into one overall file
+
+ct <- 1; ctCI <- 1
+files <- list.files("modelC_results_power_1mill/")
+length(files) # 10467
+
+res <- get(load(paste("modelC_results_power_1mill/",files[1],sep="")))
+totalRes <- data.frame(matrix(NA,nrow=(6*length(files)),ncol=12))
+colnames(totalRes) <- c("beta1",colnames(res[[3]]),"model")
+
+varCI <- data.frame(matrix(NA,nrow=(7*length(files)),ncol=5))
+colnames(varCI) <- c("beta1",colnames(res[[2]]),"model")
+
+for(i in 1:length(files)){
+  
+  fn <- paste("modelC_results_power_1mill/",files[i],sep="")
+  res <- get(load(fn))
+  
+  totalRes[ct:(ct+1),] <- cbind("beta1"=rep(res[[1]],2),res[[3]],"model"=rep(3,2))
+  totalRes[(ct+2):(ct+3),] <- cbind("beta1"=rep(res[[1]],2),res[[5]],"model"=rep(4,2))
+  totalRes[(ct+4):(ct+5),] <- cbind("beta1"=rep(res[[1]],2),res[[7]],"model"=rep(2,2))
+  
+  varCI[ctCI:(ctCI+2),] <- cbind("beta1"=rep(res[[1]],3),res[[2]],"model"=rep(3,3))
+  varCI[(ctCI+3):(ctCI+4),] <- cbind("beta1"=rep(res[[1]],2),res[[4]],"model"=rep(4,2))
+  varCI[(ctCI+5):(ctCI+6),] <- cbind("beta1"=rep(res[[1]],2),res[[6]],"model"=rep(2,2))
+  
+  ct <- ct+6
+  ctCI <- ctCI+7
+}
+
+dim(totalRes) # 62802 12 
+dim(varCI) # 73269 5
+table(totalRes$model) # 20934 of each of the three models
+table(totalRes$snpID,totalRes$model) # 10467 of each SNP id within each model
+table(totalRes$beta1,totalRes$model) # missing the first SNP for beta=0.05, but weird that it's only 2936 for beta=0.13
+# that's the least interesting beta value, though
+#        2    3    4
+#0.05 2998 2998 2998
+#0.06 3000 3000 3000
+#0.07 3000 3000 3000
+#0.08 3000 3000 3000
+#0.09 3000 3000 3000
+#0.1  3000 3000 3000
+#0.13 2936 2936 2936
+# 2 rows for each beta, one causal and one null
+
+sum(is.na(totalRes$pval)) # 0
+summary(totalRes$pval[totalRes$causal])
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#0.0000000 0.0000129 0.0008365 0.0441100 0.0179600 0.9983000 
+
+summary(totalRes$pval[!totalRes$causal])
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#0.0000188 0.2373000 0.4884000 0.4914000 0.7477000 0.9999000 
+
+head(varCI); tail(varCI)
+table(varCI$beta1,varCI$model) # 2 rows for models 2,4, 3 rows for model 3
+#        2    3    4
+#0.05 2998 4497 2998
+#0.06 3000 4500 3000
+#0.07 3000 4500 3000
+#0.08 3000 4500 3000
+#0.09 3000 4500 3000
+#0.1  3000 4500 3000
+#0.13 2936 4404 2936
+
+# all looks good!
+save(totalRes,file="pvals_power_results_jan22.RData")
+save(varCI,file="varEst_power_results_jan22.RData")
+
+rm(list=ls())
+
+# removed the individual files in the modelC_results_power_1mill/ folder
+
+## now do this on my laptop, after moving file from server to my laptop
+tmp1 <- get(load("pvals_power_results_jan22.RData"))
+tmp <- get(load("pvals_power_results_jan13_all.RData")) # these are the results i already have done
+dim(tmp1); dim(tmp) # 62802 12 | 71934 12
+
+totalRes <- rbind(tmp1,tmp)
+head(totalRes); dim(totalRes) # 134736 12
+
+save(totalRes,file="pvals_power_results_jan22_all.RData")
+
+rm(list=ls())
+
+
+#####
+# 19. Compile all varComp estimates
+
+## now do this on my laptop, after moving file from server to my laptop
+tmp1 <- get(load("varEst_power_results_jan13.RData"))
+tmp2 <- get(load("varEst_power_results_jan13_v2.RData"))
+tmp3 <- get(load("varEst_power_results_jan13_v3.RData"))
+tmp4 <- get(load("varEst_power_results_jan13_v4.RData"))
+tmp5 <- get(load("varEst_power_results_jan13_v5.RData"))
+tmp <- get(load("varEst_power_results_jan22.RData")) # these are the results i already have done
+dim(tmp1); dim(tmp) # 21798 5 | 73269 5
+dim(tmp2); dim(tmp3); dim(tmp4); dim(tmp5) # 6223 5 | 24752 5 | 17234 5 | 14000 5
+
+totalRes <- rbind(tmp1,tmp2,tmp3,tmp4,tmp5,tmp)
+head(totalRes); dim(totalRes) # 157276 5
+
+table(totalRes$beta1,totalRes$model)
+# 2 entries for models 2,4, 3 entries for model 3
+# the higher beta values have less iterations, that's fine
+#         2    3    4
+# 0.05 5008 7512 5008
+# 0.06 4998 7497 4998
+# 0.07 5000 7500 5000
+# 0.08 5000 7500 5000
+# 0.09 5000 7500 5000
+# 0.1  5002 7503 5002
+# 0.13 4936 7404 4936
+# 0.15 1990 2985 1990
+# 0.18 2002 3003 2002
+# 0.2  2002 3003 2002
+# 0.25 1996 2994 1996
+# 0.3  2002 3003 2002
+
+save(totalRes,file="varCI_results_jan22_all.RData")
+
+rm(list=ls())
+
+
+#####
+# 20. New type I error results
+
+totalRes <- get(load("pvals_power_results_jan22_all.RData"))
+alpha <- c(0.05,0.01,0.005,0.001)
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model==3&!totalRes$causal)) # 22456
+(numX <- sum(totalRes$model==2&!totalRes$causal)) # 22456
+(numAuto <- sum(totalRes$model==4&!totalRes$causal)) # 22456
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[totalRes$model==3&!totalRes$causal,"pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[totalRes$model==2&!totalRes$causal,"pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[totalRes$model==4&!totalRes$causal,"pval"]<alpha[a])/numAuto
+}
+
+library(xtable)
+xtable(tyIerr,digits=5)
+
+# get CIs
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
+#[1,] 0.0469801776 0.052681383
+#[2,] 0.0080056994 0.010608479
+#[3,] 0.0040204571 0.005865542
+#[4,] 0.0005217601 0.001348564
+
+xtable(ci_both,digits=5)
+bothRes <- cbind(alpha,tyIerr$both,ci_both)
+xtable(bothRes,digits=5)
+
+(ci_justX <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # look good!
+# [1,] 0.0458223579 0.051523563
+# [2,] 0.0078275733 0.010430353
+# [3,] 0.0044212408 0.006266326
+# [4,] 0.0006108231 0.001437627
+
+xtable(ci_justX,digits=5)
+justXRes <- cbind(alpha,tyIerr$justX,ci_justX)
+xtable(justXRes,digits=5)
+
+(ci_justAuto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # NONE contain true value!!
+# [1,] 0.070403761 0.076104967
+# [2,] 0.019494834 0.022097614
+# [3,] 0.010032213 0.011877299
+# [4,] 0.001501454 0.002328258
+
+justAutoRes <- cbind(alpha,tyIerr$justAuto,ci_justAuto)
+xtable(justAutoRes,digits=5)
+
+rm(list=ls())
+
+
+#####
+# 21. Process final round of power simulations
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/")
+
+# loop through results and make them into one overall file
+
+ct <- 1; ctCI <- 1
+files <- list.files("modelC_results_power/")
+length(files) # 9301 as of 1pm 1/27/14
+
+res <- get(load(paste("modelC_results_power/",files[1],sep=""))) # it's a list of length 3
+# first element is fitting x + auto adj on 5 SNPs
+# second element is fitting auto adj on 5 SNPs
+# third element is fitting x adj on 5 SNPs
+justAuto <- res[[2]]
+totalRes <- data.frame(matrix(NA,nrow=(length(files)*10*3),ncol=12),stringsAsFactors=FALSE)
+colnames(totalRes) <- c("beta1",colnames(justAuto[[3]]$mm_res),"model")
+totalRes$model <- as.character(totalRes$model)
+
+varCI <- data.frame(matrix(NA,nrow=(35*length(files)),ncol=5))
+colnames(varCI) <- c("beta1",colnames(justAuto[[3]]$var_est_ci),"model")
+
+for(i in 1:length(files)){
+  
+  fn <- paste("modelC_results_power/",files[i],sep="")
+  res <- get(load(fn))
+  
+  # there are 5 SNPs for each of the three models
+  justAuto <- res[[2]]
+  justX <- res[[3]]
+  both <- res[[1]]
+  
+  ## look at results for fitting gX and gA
+  if(length(both)==5){
+  if(!is.null(both[[1]])&length(both[[1]])==4){
+    totalRes[ct:(ct+1),1:11] <- cbind("beta1"=rep(both[[1]]$beta1,2),both[[1]]$mm_res)
+    totalRes[ct:(ct+1),"model"] <- rep(both[[1]]$model,2)
+    
+    varCI[ctCI:(ctCI+2),1:4] <- cbind("beta1"=rep(both[[1]]$beta1,3),both[[1]]$var_est_ci)
+    varCI[ctCI:(ctCI+2),"model"] <- rep(both[[1]]$model,3)
+  }
+  if(!is.null(both[[2]])&length(both[[2]])==4){
+    totalRes[(ct+2):(ct+3),1:11] <- cbind("beta1"=rep(both[[2]]$beta1,2),both[[2]]$mm_res)
+    totalRes[(ct+2):(ct+3),"model"] <- rep(both[[2]]$model,2)
+    
+    varCI[(ctCI+3):(ctCI+5),1:4] <- cbind("beta1"=rep(both[[2]]$beta1,3),both[[2]]$var_est_ci)
+    varCI[(ctCI+3):(ctCI+5),"model"] <- rep(both[[2]]$model,3)
+  }
+  if(!is.null(both[[3]])&length(both[[3]])==4){
+    totalRes[(ct+4):(ct+5),1:11] <- cbind("beta1"=rep(both[[3]]$beta1,2),both[[3]]$mm_res)
+    totalRes[(ct+4):(ct+5),"model"] <- rep(both[[3]]$model,2)
+    
+    varCI[(ctCI+6):(ctCI+8),1:4] <- cbind("beta1"=rep(both[[3]]$beta1,3),both[[3]]$var_est_ci)
+    varCI[(ctCI+6):(ctCI+8),"model"] <- rep(both[[3]]$model,3)    
+  }
+  if(!is.null(both[[4]])&length(both[[4]])==4){
+    totalRes[(ct+6):(ct+7),1:11] <- cbind("beta1"=rep(both[[4]]$beta1,2),both[[4]]$mm_res)
+    totalRes[(ct+6):(ct+7),"model"] <- rep(both[[4]]$model,2)
+    
+    varCI[(ctCI+9):(ctCI+11),1:4] <- cbind("beta1"=rep(both[[4]]$beta1,3),both[[4]]$var_est_ci)
+    varCI[(ctCI+9):(ctCI+11),"model"] <- rep(both[[4]]$model,3)    
+  }
+  if(!is.null(both[[5]])&length(both[[5]])==4){
+    totalRes[(ct+8):(ct+9),1:11] <- cbind("beta1"=rep(both[[5]]$beta1,2),both[[5]]$mm_res)
+    totalRes[(ct+8):(ct+9),"model"] <- rep(both[[5]]$model,2)
+    
+    varCI[(ctCI+12):(ctCI+14),1:4] <- cbind("beta1"=rep(both[[5]]$beta1,3),both[[5]]$var_est_ci)
+    varCI[(ctCI+12):(ctCI+14),"model"] <- rep(both[[5]]$model,3)    
+  }}
+
+  ## now results for fitting gA
+  if(length(justAuto)==5){
+  if(!is.null(justAuto[[1]])&length(justAuto[[1]])==4){
+    totalRes[(ct+10):(ct+11),1:11] <- cbind("beta1"=rep(justAuto[[1]]$beta1,2),justAuto[[1]]$mm_res)
+    totalRes[(ct+10):(ct+11),"model"] <- rep(justAuto[[1]]$model,2)
+    
+    varCI[(ctCI+15):(ctCI+16),1:4] <- cbind("beta1"=rep(justAuto[[1]]$beta1,2),justAuto[[1]]$var_est_ci)
+    varCI[(ctCI+15):(ctCI+16),"model"] <- rep(justAuto[[1]]$model,2)
+  }
+  if(!is.null(justAuto[[2]])&length(justAuto[[2]])==4){
+    totalRes[(ct+12):(ct+13),1:11] <- cbind("beta1"=rep(justAuto[[2]]$beta1,2),justAuto[[2]]$mm_res)
+    totalRes[(ct+12):(ct+13),"model"] <- rep(justAuto[[2]]$model,2)
+    
+    varCI[(ctCI+17):(ctCI+18),1:4] <- cbind("beta1"=rep(justAuto[[2]]$beta1,2),justAuto[[2]]$var_est_ci)
+    varCI[(ctCI+17):(ctCI+18),"model"] <- rep(justAuto[[2]]$model,2)
+  }
+  if(!is.null(justAuto[[3]])&length(justAuto[[3]])==4){
+    totalRes[(ct+14):(ct+15),1:11] <- cbind("beta1"=rep(justAuto[[3]]$beta1,2),justAuto[[3]]$mm_res)
+    totalRes[(ct+14):(ct+15),"model"] <- rep(justAuto[[3]]$model,2)
+    
+    varCI[(ctCI+19):(ctCI+20),1:4] <- cbind("beta1"=rep(justAuto[[3]]$beta1,2),justAuto[[3]]$var_est_ci)
+    varCI[(ctCI+19):(ctCI+20),"model"] <- rep(justAuto[[3]]$model,2)
+  }
+  if(!is.null(justAuto[[4]])&length(justAuto[[4]])==4){
+    totalRes[(ct+16):(ct+17),1:11] <- cbind("beta1"=rep(justAuto[[4]]$beta1,2),justAuto[[4]]$mm_res)
+    totalRes[(ct+16):(ct+17),"model"] <- rep(justAuto[[4]]$model,2)
+    
+    varCI[(ctCI+21):(ctCI+22),1:4] <- cbind("beta1"=rep(justAuto[[4]]$beta1,2),justAuto[[4]]$var_est_ci)
+    varCI[(ctCI+21):(ctCI+22),"model"] <- rep(justAuto[[4]]$model,2)
+  }
+  if(!is.null(justAuto[[5]])&length(justAuto[[5]])==4){
+    totalRes[(ct+18):(ct+19),1:11] <- cbind("beta1"=rep(justAuto[[5]]$beta1,2),justAuto[[5]]$mm_res)
+    totalRes[(ct+18):(ct+19),"model"] <- rep(justAuto[[5]]$model,2)
+    
+    varCI[(ctCI+23):(ctCI+24),1:4] <- cbind("beta1"=rep(justAuto[[5]]$beta1,2),justAuto[[5]]$var_est_ci)
+    varCI[(ctCI+23):(ctCI+24),"model"] <- rep(justAuto[[5]]$model,2)
+  }}
+  
+  ## now results for fitting gX
+  if(length(justX)==5){
+  if(!is.null(justX[[1]])&length(justX[[1]])==4){
+    totalRes[(ct+20):(ct+21),1:11] <- cbind("beta1"=rep(justX[[1]]$beta1,2),justX[[1]]$mm_res)
+    totalRes[(ct+20):(ct+21),"model"] <- rep(justX[[1]]$model,2)
+    
+    varCI[(ctCI+25):(ctCI+26),1:4] <- cbind("beta1"=rep(justX[[1]]$beta1,2),justX[[1]]$var_est_ci)
+    varCI[(ctCI+25):(ctCI+26),"model"] <- rep(justX[[1]]$model,2)
+  }
+  if(!is.null(justX[[2]])&length(justX[[2]])==4){
+    totalRes[(ct+22):(ct+23),1:11] <- cbind("beta1"=rep(justX[[2]]$beta1,2),justX[[2]]$mm_res)
+    totalRes[(ct+22):(ct+23),"model"] <- rep(justX[[2]]$model,2)
+    
+    varCI[(ctCI+27):(ctCI+28),1:4] <- cbind("beta1"=rep(justX[[2]]$beta1,2),justX[[2]]$var_est_ci)
+    varCI[(ctCI+27):(ctCI+28),"model"] <- rep(justX[[2]]$model,2)
+  }
+  if(!is.null(justX[[3]])&length(justX[[3]])==4){
+    totalRes[(ct+24):(ct+25),1:11] <- cbind("beta1"=rep(justX[[3]]$beta1,2),justX[[3]]$mm_res)
+    totalRes[(ct+24):(ct+25),"model"] <- rep(justX[[3]]$model,2)
+    
+    varCI[(ctCI+29):(ctCI+30),1:4] <- cbind("beta1"=rep(justX[[3]]$beta1,2),justX[[3]]$var_est_ci)
+    varCI[(ctCI+29):(ctCI+30),"model"] <- rep(justX[[3]]$model,2)
+  }
+  if(!is.null(justX[[4]])&length(justX[[4]])==4){
+    totalRes[(ct+26):(ct+27),1:11] <- cbind("beta1"=rep(justX[[4]]$beta1,2),justX[[4]]$mm_res)
+    totalRes[(ct+26):(ct+27),"model"] <- rep(justX[[4]]$model,2)
+    
+    varCI[(ctCI+31):(ctCI+32),1:4] <- cbind("beta1"=rep(justX[[4]]$beta1,2),justX[[4]]$var_est_ci)
+    varCI[(ctCI+31):(ctCI+32),"model"] <- rep(justX[[4]]$model,2)
+  }
+  if(!is.null(justX[[5]])&length(justX[[5]])==4){
+    totalRes[(ct+28):(ct+29),1:11] <- cbind("beta1"=rep(justX[[5]]$beta1,2),justX[[5]]$mm_res)
+    totalRes[(ct+28):(ct+29),"model"] <- rep(justX[[5]]$model,2)
+    
+    varCI[(ctCI+33):(ctCI+34),1:4] <- cbind("beta1"=rep(justX[[5]]$beta1,2),justX[[5]]$var_est_ci)
+    varCI[(ctCI+33):(ctCI+34),"model"] <- rep(justX[[5]]$model,2)
+  }}
+  
+  ct <- ct+30
+  ctCI <- ctCI+35
+  
+  if(i%%100==0){print(i)}
+}
+
+dim(totalRes) # 161070 12 
+dim(varCI) # 187915 5
+
+table(totalRes$model,exclude=NULL) 
+#auto  both     x  <NA> 
+#  41240 27952 47614 44264 
+
+table(totalRes$beta1,totalRes$model,exclude=NULL) 
+# auto  both     x  <NA>
+#   0.05 13192  9980 14134     0
+# 0.06  5678  3878  6604     0
+# 0.07   138    20   270     0
+# 0.08 11786  8742 13206     0
+# 0.09  4828  2248  6838     0
+# 0.1   5618  3084  6562     0
+# <NA>     0     0     0 44264
+
+
+ftable(totalRes$causal,totalRes$beta1,totalRes$model,exclude=NULL)
+# auto  both     x    NA
+# FALSE 0.05   6596  4990  7067     0
+# 0.06   2839  1939  3302     0
+# 0.07     69    10   135     0
+# 0.08   5893  4371  6603     0
+# 0.09   2414  1124  3419     0
+# 0.1    2809  1542  3281     0
+# NA        0     0     0     0
+# TRUE  0.05   6596  4990  7067     0
+# 0.06   2839  1939  3302     0
+# 0.07     69    10   135     0
+# 0.08   5893  4371  6603     0
+# 0.09   2414  1124  3419     0
+# 0.1    2809  1542  3281     0
+# NA        0     0     0     0
+# NA    0.05      0     0     0     0
+# 0.06      0     0     0     0
+# 0.07      0     0     0     0
+# 0.08      0     0     0     0
+# 0.09      0     0     0     0
+# 0.1       0     0     0     0
+# NA        0     0     0 44264
+
+
+summary(totalRes$pval[totalRes$causal])
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+#  0.000   0.000   0.009   0.094   0.086   0.999   14446 
+
+summary(totalRes$pval[!totalRes$causal])
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+#  0.000   0.232   0.483   0.487   0.737   1.000   14446 
+
+head(varCI); tail(varCI)
+table(varCI$beta1,varCI$model,exclude=NULL) # 2 rows for models 2,4, 3 rows for model 3
+# auto  both     x  <NA>
+#   0.05 13192 14970 14134     0
+# 0.06  5678  5817  6604     0
+# 0.07   138    30   270     0
+# 0.08 11786 13113 13206     0
+# 0.09  4828  3372  6838     0
+# 0.1   5618  4626  6562     0
+# <NA>     0     0     0 57133
+
+# all looks good!
+save(totalRes,file="pvals_power_results_jan27.RData")
+save(varCI,file="varEst_power_results_jan27.RData")
+
+rm(list=ls())
+
+
+#####
+# 22. Power graph for 10K beta1=0.05 simulations
+
+source("powerGraph.R")
+tmp1 <- get(load("pvals_power_results_jan22_v2.RData"))
+tmp2 <- get(load("pvals_power_results_jan22_all.RData"))
+dim(tmp1); dim(tmp2) # 277980 12 | 134736 12
+
+totalRes <- rbind(tmp1,tmp2)
+dim(totalRes) # 412716 12
+
+# be sure to exclude the NA rows.
+sum(is.na(totalRes$pval)) # 73428
+totalRes <- totalRes[!is.na(totalRes$pval),]
+dim(totalRes) # 339288 12
+
+totalRes$model[totalRes$model==2] <- "x"
+totalRes$model[totalRes$model==3] <- "both"
+totalRes$model[totalRes$model==4] <- "auto"
+
+ftable(totalRes$causal,totalRes$beta1,totalRes$model)
+# auto both    x
+# FALSE 0.05  9095 7489 9566
+# 0.06  5338 4438 5801
+# 0.07  2569 2510 2635
+# 0.08  8393 6871 9103
+# 0.09  4914 3624 5919
+# 0.1   5309 4042 5781
+# 0.13  2467 2467 2467
+# 0.15   994  994  994
+# 0.18  1000 1000 1000
+# 0.2   1000 1000 1000
+# 0.25   997  997  997
+# 0.3   1000 1000 1000
+# TRUE  0.05  9095 7489 9566
+# 0.06  5338 4438 5801
+# 0.07  2569 2510 2635
+# 0.08  8393 6871 9103
+# 0.09  4914 3624 5919
+# 0.1   5309 4042 5781
+# 0.13  2467 2467 2467
+# 0.15   994  994  994
+# 0.18  1000 1000 1000
+# 0.2   1000 1000 1000
+# 0.25   997  997  997
+# 0.3   1000 1000 1000
+
+save(totalRes,file="pvals_power_results_jan26.RData")
+
+powerGraph(totalRes,b=0.05,fn="power_3models_beta05.pdf")
+powerGraph(totalRes,b=0.08,fn="power_3models_beta08.pdf")
+
+rm(list=ls())
+
+
+#####
+# 23. More simulations!
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+# calls model_c_powerCalc_function_v5.R
+# which calls only one SNP at a time
+# submits start values for each varCompEst function
+
+# qsub -N pow005 -q thornton.q -t 1501-5000 batch_model_c_powerCalc_function_005.sh
+# see how long it takes to do 2500 iterations, for beta1=0.05
+
+# qsub -N res -q thornton.q -t 1-1500 -p -50 batch_model_c_powerCalc_function_005.sh
+
+# have sim results stored in modelC_results_power, modelC_results_power_1mill..._1mill_10
+folders <- c("modelC_results_power","modelC_results_power_1mill",paste("modelC_results_power_1mill_",c(2,10),sep=""))
+# read in files in all these folders
+
+
+res <- get(load(paste(folders[1],"/mmRes_SNP1_beta0.05.RData",sep="")))
+
+totalRes <- data.frame(matrix(NA,nrow=(length(folders)*1500*6),ncol=12),stringsAsFactors=FALSE)
+colnames(totalRes) <- c("beta1",colnames(res$auto[[4]]),"model")
+totalRes$model <- as.character(totalRes$model)
+
+varCI <- data.frame(matrix(NA,nrow=(length(folders)*1500*7),ncol=5))
+colnames(varCI) <- c("beta1",colnames(res$auto[[3]]),"model")
+
+ct <- 1; ctCI <- 1
+
+for(i in 1:length(folders)){
+  fns <- list.files(folders[i])
+  print(paste(folders[i],length(fns)))
+  for(j in 1:length(fns)){
+    res <- get(load(paste(folders[i],"/",fns[j],sep="")))
+    totalRes[ct:(ct+1),1:11] <- cbind("beta1"=rep(res$both[[1]],2),res$both[[4]])
+    totalRes$model[ct:(ct+1)] <- rep("both",2)
+    
+    totalRes[(ct+2):(ct+3),1:11] <- cbind("beta1"=rep(res$x[[1]],2),res$x[[4]])
+    totalRes$model[(ct+2):(ct+3)] <- rep("x",2)
+    
+    totalRes[(ct+4):(ct+5),1:11] <- cbind("beta1"=rep(res$auto[[1]],2),res$auto[[4]])
+    totalRes$model[(ct+4):(ct+5)] <- rep("auto",2)
+    
+    varCI[ctCI:(ctCI+2),1:4] <- cbind("beta1"=rep(res$both[[1]],3),res$both[[3]])
+    varCI$model[ctCI:(ctCI+2)] <- rep("both",3)
+    
+    varCI[(ctCI+3):(ctCI+4),1:4] <- cbind("beta1"=rep(res$x[[1]],2),res$x[[3]])
+    varCI$model[(ctCI+3):(ctCI+4)] <- rep("x",2)
+    
+    varCI[(ctCI+5):(ctCI+6),1:4] <- cbind("beta1"=rep(res$auto[[1]],2),res$auto[[3]])
+    varCI$model[(ctCI+5):(ctCI+6)] <- rep("auto",2)  
+  
+    if(j%%100==0){print(j)}
+    
+    ct <- ct+6
+    ctCI <- ctCI+7
+  }
+}
+
+ct; ctCI # 23899 | 27882
+head(totalRes); head(varCI)
+
+dim(totalRes) # 36000 12
+dim(varCI) # 42000 5
+
+totalRes <- totalRes[!is.na(totalRes$pval),]
+varCI <- varCI[!is.na(varCI$beta1),]
+
+table(totalRes$model,exclude=NULL) # 7966 for all
+
+table(totalRes$beta1,totalRes$model,exclude=NULL)  # all beta1=0.05
+ftable(totalRes$causal,totalRes$beta1,totalRes$model,exclude=NULL)
+# 3983 each model, each causal, for beta1=0.05
+
+summary(totalRes$pval[totalRes$causal])
+#   Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+#0.000000 0.005847 0.038810 0.141700 0.177300 0.999300 
+
+summary(totalRes$pval[!totalRes$causal])
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#0.0000136 0.2328000 0.4828000 0.4871000 0.7363000 0.9999000 
+
+head(varCI); tail(varCI)
+table(varCI$beta1,varCI$model,exclude=NULL) # 2 rows for models 2,4, 3 rows for model 3
+# 7966 or 11949 for each model
+
+# all looks good!
+save(totalRes,file="pvals_power_results_jan29.RData")
+save(varCI,file="varEst_power_results_jan29.RData")
+
+rm(list=ls())
+
+tmp <- get(load("pvals_power_results_jan26.RData"))
+tmp2 <- get(load("pvals_power_results_jan29.RData"))
+
+dim(tmp); dim(tmp2) # 339288 12 | 23898 12
+
+totalRes <- rbind(tmp,tmp2)
+dim(totalRes) # 363186 12
+
+ftable(totalRes$model,totalRes$causal,totalRes$beta1)
+# we have 13078 for each model for beta1=0.05, causal=T
+# just need 90K more... :/
+
+save(totalRes,file="pvals_power_results_ALL.RData")
+
+rm(list=ls())
+
+
+#####
+# 24. Process simulations
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/")
+
+# loop through results and make them into one overall file
+
+ct <- 1; ctCI <- 1
+files <- c(list.files(paste("modelC_results_power_1mill_",7:10,sep=""),full.names=TRUE))
+length(files) # 13500; 1500 in each
+
+res <- get(load(files[1])) # it's a list of length 3
+# first element is fitting x + auto adj on 5 SNPs
+# second element is fitting auto adj on 5 SNPs
+# third element is fitting x adj on 5 SNPs
+justAuto <- res[[2]]
+totalRes <- data.frame(matrix(NA,nrow=(length(files)*10*3),ncol=12),stringsAsFactors=FALSE)
+colnames(totalRes) <- c("beta1",colnames(justAuto[[3]]$mm_res),"model")
+totalRes$model <- as.character(totalRes$model)
+
+varCI <- data.frame(matrix(NA,nrow=(35*length(files)),ncol=5))
+colnames(varCI) <- c("beta1",colnames(justAuto[[3]]$var_est_ci),"model")
+
+for(i in 1:length(files)){
+  
+  res <- get(load(files[i]))
+  
+  # there are 5 SNPs for each of the three models
+  justAuto <- res[[2]]
+  justX <- res[[3]]
+  both <- res[[1]]
+  
+  ## look at results for fitting gX and gA
+  if(length(both)==5){
+    if(!is.null(both[[1]])&length(both[[1]])==4){
+      totalRes[ct:(ct+1),1:11] <- cbind("beta1"=rep(both[[1]]$beta1,2),both[[1]]$mm_res)
+      totalRes[ct:(ct+1),"model"] <- rep(both[[1]]$model,2)
+      
+      varCI[ctCI:(ctCI+2),1:4] <- cbind("beta1"=rep(both[[1]]$beta1,3),both[[1]]$var_est_ci)
+      varCI[ctCI:(ctCI+2),"model"] <- rep(both[[1]]$model,3)
+    }
+    if(!is.null(both[[2]])&length(both[[2]])==4){
+      totalRes[(ct+2):(ct+3),1:11] <- cbind("beta1"=rep(both[[2]]$beta1,2),both[[2]]$mm_res)
+      totalRes[(ct+2):(ct+3),"model"] <- rep(both[[2]]$model,2)
+      
+      varCI[(ctCI+3):(ctCI+5),1:4] <- cbind("beta1"=rep(both[[2]]$beta1,3),both[[2]]$var_est_ci)
+      varCI[(ctCI+3):(ctCI+5),"model"] <- rep(both[[2]]$model,3)
+    }
+    if(!is.null(both[[3]])&length(both[[3]])==4){
+      totalRes[(ct+4):(ct+5),1:11] <- cbind("beta1"=rep(both[[3]]$beta1,2),both[[3]]$mm_res)
+      totalRes[(ct+4):(ct+5),"model"] <- rep(both[[3]]$model,2)
+      
+      varCI[(ctCI+6):(ctCI+8),1:4] <- cbind("beta1"=rep(both[[3]]$beta1,3),both[[3]]$var_est_ci)
+      varCI[(ctCI+6):(ctCI+8),"model"] <- rep(both[[3]]$model,3)    
+    }
+    if(!is.null(both[[4]])&length(both[[4]])==4){
+      totalRes[(ct+6):(ct+7),1:11] <- cbind("beta1"=rep(both[[4]]$beta1,2),both[[4]]$mm_res)
+      totalRes[(ct+6):(ct+7),"model"] <- rep(both[[4]]$model,2)
+      
+      varCI[(ctCI+9):(ctCI+11),1:4] <- cbind("beta1"=rep(both[[4]]$beta1,3),both[[4]]$var_est_ci)
+      varCI[(ctCI+9):(ctCI+11),"model"] <- rep(both[[4]]$model,3)    
+    }
+    if(!is.null(both[[5]])&length(both[[5]])==4){
+      totalRes[(ct+8):(ct+9),1:11] <- cbind("beta1"=rep(both[[5]]$beta1,2),both[[5]]$mm_res)
+      totalRes[(ct+8):(ct+9),"model"] <- rep(both[[5]]$model,2)
+      
+      varCI[(ctCI+12):(ctCI+14),1:4] <- cbind("beta1"=rep(both[[5]]$beta1,3),both[[5]]$var_est_ci)
+      varCI[(ctCI+12):(ctCI+14),"model"] <- rep(both[[5]]$model,3)    
+    }}
+  
+  ## now results for fitting gA
+  if(length(justAuto)==5){
+    if(!is.null(justAuto[[1]])&length(justAuto[[1]])==4){
+      totalRes[(ct+10):(ct+11),1:11] <- cbind("beta1"=rep(justAuto[[1]]$beta1,2),justAuto[[1]]$mm_res)
+      totalRes[(ct+10):(ct+11),"model"] <- rep(justAuto[[1]]$model,2)
+      
+      varCI[(ctCI+15):(ctCI+16),1:4] <- cbind("beta1"=rep(justAuto[[1]]$beta1,2),justAuto[[1]]$var_est_ci)
+      varCI[(ctCI+15):(ctCI+16),"model"] <- rep(justAuto[[1]]$model,2)
+    }
+    if(!is.null(justAuto[[2]])&length(justAuto[[2]])==4){
+      totalRes[(ct+12):(ct+13),1:11] <- cbind("beta1"=rep(justAuto[[2]]$beta1,2),justAuto[[2]]$mm_res)
+      totalRes[(ct+12):(ct+13),"model"] <- rep(justAuto[[2]]$model,2)
+      
+      varCI[(ctCI+17):(ctCI+18),1:4] <- cbind("beta1"=rep(justAuto[[2]]$beta1,2),justAuto[[2]]$var_est_ci)
+      varCI[(ctCI+17):(ctCI+18),"model"] <- rep(justAuto[[2]]$model,2)
+    }
+    if(!is.null(justAuto[[3]])&length(justAuto[[3]])==4){
+      totalRes[(ct+14):(ct+15),1:11] <- cbind("beta1"=rep(justAuto[[3]]$beta1,2),justAuto[[3]]$mm_res)
+      totalRes[(ct+14):(ct+15),"model"] <- rep(justAuto[[3]]$model,2)
+      
+      varCI[(ctCI+19):(ctCI+20),1:4] <- cbind("beta1"=rep(justAuto[[3]]$beta1,2),justAuto[[3]]$var_est_ci)
+      varCI[(ctCI+19):(ctCI+20),"model"] <- rep(justAuto[[3]]$model,2)
+    }
+    if(!is.null(justAuto[[4]])&length(justAuto[[4]])==4){
+      totalRes[(ct+16):(ct+17),1:11] <- cbind("beta1"=rep(justAuto[[4]]$beta1,2),justAuto[[4]]$mm_res)
+      totalRes[(ct+16):(ct+17),"model"] <- rep(justAuto[[4]]$model,2)
+      
+      varCI[(ctCI+21):(ctCI+22),1:4] <- cbind("beta1"=rep(justAuto[[4]]$beta1,2),justAuto[[4]]$var_est_ci)
+      varCI[(ctCI+21):(ctCI+22),"model"] <- rep(justAuto[[4]]$model,2)
+    }
+    if(!is.null(justAuto[[5]])&length(justAuto[[5]])==4){
+      totalRes[(ct+18):(ct+19),1:11] <- cbind("beta1"=rep(justAuto[[5]]$beta1,2),justAuto[[5]]$mm_res)
+      totalRes[(ct+18):(ct+19),"model"] <- rep(justAuto[[5]]$model,2)
+      
+      varCI[(ctCI+23):(ctCI+24),1:4] <- cbind("beta1"=rep(justAuto[[5]]$beta1,2),justAuto[[5]]$var_est_ci)
+      varCI[(ctCI+23):(ctCI+24),"model"] <- rep(justAuto[[5]]$model,2)
+    }}
+  
+  ## now results for fitting gX
+  if(length(justX)==5){
+    if(!is.null(justX[[1]])&length(justX[[1]])==4){
+      totalRes[(ct+20):(ct+21),1:11] <- cbind("beta1"=rep(justX[[1]]$beta1,2),justX[[1]]$mm_res)
+      totalRes[(ct+20):(ct+21),"model"] <- rep(justX[[1]]$model,2)
+      
+      varCI[(ctCI+25):(ctCI+26),1:4] <- cbind("beta1"=rep(justX[[1]]$beta1,2),justX[[1]]$var_est_ci)
+      varCI[(ctCI+25):(ctCI+26),"model"] <- rep(justX[[1]]$model,2)
+    }
+    if(!is.null(justX[[2]])&length(justX[[2]])==4){
+      totalRes[(ct+22):(ct+23),1:11] <- cbind("beta1"=rep(justX[[2]]$beta1,2),justX[[2]]$mm_res)
+      totalRes[(ct+22):(ct+23),"model"] <- rep(justX[[2]]$model,2)
+      
+      varCI[(ctCI+27):(ctCI+28),1:4] <- cbind("beta1"=rep(justX[[2]]$beta1,2),justX[[2]]$var_est_ci)
+      varCI[(ctCI+27):(ctCI+28),"model"] <- rep(justX[[2]]$model,2)
+    }
+    if(!is.null(justX[[3]])&length(justX[[3]])==4){
+      totalRes[(ct+24):(ct+25),1:11] <- cbind("beta1"=rep(justX[[3]]$beta1,2),justX[[3]]$mm_res)
+      totalRes[(ct+24):(ct+25),"model"] <- rep(justX[[3]]$model,2)
+      
+      varCI[(ctCI+29):(ctCI+30),1:4] <- cbind("beta1"=rep(justX[[3]]$beta1,2),justX[[3]]$var_est_ci)
+      varCI[(ctCI+29):(ctCI+30),"model"] <- rep(justX[[3]]$model,2)
+    }
+    if(!is.null(justX[[4]])&length(justX[[4]])==4){
+      totalRes[(ct+26):(ct+27),1:11] <- cbind("beta1"=rep(justX[[4]]$beta1,2),justX[[4]]$mm_res)
+      totalRes[(ct+26):(ct+27),"model"] <- rep(justX[[4]]$model,2)
+      
+      varCI[(ctCI+31):(ctCI+32),1:4] <- cbind("beta1"=rep(justX[[4]]$beta1,2),justX[[4]]$var_est_ci)
+      varCI[(ctCI+31):(ctCI+32),"model"] <- rep(justX[[4]]$model,2)
+    }
+    if(!is.null(justX[[5]])&length(justX[[5]])==4){
+      totalRes[(ct+28):(ct+29),1:11] <- cbind("beta1"=rep(justX[[5]]$beta1,2),justX[[5]]$mm_res)
+      totalRes[(ct+28):(ct+29),"model"] <- rep(justX[[5]]$model,2)
+      
+      varCI[(ctCI+33):(ctCI+34),1:4] <- cbind("beta1"=rep(justX[[5]]$beta1,2),justX[[5]]$var_est_ci)
+      varCI[(ctCI+33):(ctCI+34),"model"] <- rep(justX[[5]]$model,2)
+    }}
+  
+  ct <- ct+30
+  ctCI <- ctCI+35
+  
+  if(i%%100==0){print(i)}
+}
+
+dim(totalRes) # 135030 12
+dim(varCI) # 157535 5
+
+totalRes <- totalRes[!is.na(totalRes$pval),]
+varCI <- varCI[!is.na(varCI$model),]
+
+table(totalRes$model,exclude=NULL)# 37450 for each
+table(totalRes$beta1,totalRes$model,exclude=NULL) # just beta1=0.05
+ftable(totalRes$causal,totalRes$beta1,totalRes$model,exclude=NULL) # 18725 for each causal, each model, beta=0.05
+
+summary(totalRes$pval[totalRes$causal])
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.00000 0.00567 0.03996 0.14040 0.17550 0.99980 
+
+summary(totalRes$pval[!totalRes$causal])
+#Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#0.0000248 0.2329000 0.4832000 0.4888000 0.7430000 1.0000000 
+
+head(varCI); tail(varCI)
+table(varCI$beta1,varCI$model,exclude=NULL) # 2 rows for models 2,4, 3 rows for model 3
+
+# all looks good!
+save(totalRes,file="pvals_power_results_feb6.RData")
+save(varCI,file="varEst_power_results_feb6.RData")
+
+rm(list=ls())
+
+tmp <- get(load("pvals_power_results_mar23.RData"))
+tmp2 <- get(load("pvals_power_results_ALL.RData"))
+
+dim(tmp); dim(tmp2) # 900000 12 | 3590976 12
+
+totalRes <- rbind(tmp,tmp2)
+dim(totalRes) # 4490976 12
+
+sum(duplicated(totalRes$pval)) # 490080; dang.
+totalRes <- totalRes[!duplicated(totalRes$pval),]
+sum(duplicated(totalRes$pval)) # 0; good
+dim(totalRes) # 4040976 12
+
+ftable(totalRes$model,totalRes$causal,totalRes$beta1)
+# we have 326043 for each model for beta1=0.05, causal=T
+# added some beta=0.07 iterations in there too, 303K for causal=T
+
+save(totalRes,file="pvals_power_results_ALL.RData")
+
+rm(list=ls())
+
+
+#####
+# 24. Power graph + type I error for 80K beta1=0.05 simulations
+
+source("powerGraph.R")
+
+totalRes <- get(load("pvals_power_results_ALL.RData"))
+dim(totalRes) # 1835976 12
+
+# be sure to exclude the NA rows.
+sum(is.na(totalRes$pval)) # 0
+
+ftable(totalRes$causal,totalRes$beta1,totalRes$model)
+# auto  both     x
+# FALSE 0.05  80578 78972 81049
+# 0.06   7995  6142  8568
+# 0.07   3012  2618  3208
+# 0.08   8819  7158  9584
+# 0.09   7567  5548  8799
+# 0.1    8295  6293  9100
+# 0.13   8949  7242  9624
+# 0.15    994   994   994
+# 0.18   1000  1000  1000
+# 0.2    1000  1000  1000
+# 0.25    997   997   997
+# 0.3    1000  1000  1000
+# TRUE  0.05  80578 78972 81049
+# 0.06   7995  6142  8568
+# 0.07   3012  2618  3208
+# 0.08   8819  7158  9584
+# 0.09   7567  5548  8799
+# 0.1    8295  6293  9100
+# 0.13   8949  7242  9624
+# 0.15    994   994   994
+# 0.18   1000  1000  1000
+# 0.2    1000  1000  1000
+# 0.25    997   997   997
+# 0.3    1000  1000  1000
+
+powerGraph(totalRes,b=0.05,fn="power_3models_beta05.pdf")
+
+alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05)
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model=="both"&!totalRes$causal)) # 296929
+(numX <- sum(totalRes$model=="x"&!totalRes$causal)) # 312888
+(numAuto <- sum(totalRes$model=="auto"&!totalRes$causal)) # 308171
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[totalRes$model=="both"&!totalRes$causal,"pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[totalRes$model=="x"&!totalRes$causal,"pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[totalRes$model=="auto"&!totalRes$causal,"pval"]<alpha[a])/numAuto
+}
+
+library(xtable)
+xtable(tyIerr,digits=6)
+
+# get CIs
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
+# [1,]  4.887750e-02 5.135450e-02
+# [2,]  9.345148e-03 1.047597e-02
+# [3,]  4.583885e-03 5.385517e-03
+# [4,]  8.038806e-04 1.163101e-03
+# [5,]  3.268835e-04 5.809542e-04
+# [6,]  3.564163e-05 1.492883e-04
+# [7,]  1.866017e-05 9.902249e-05
+# [8,] -9.564015e-06 2.637582e-05
+
+xtable(ci_both,digits=5)
+bothRes <- cbind(alpha,tyIerr$both,ci_both)
+xtable(bothRes,digits=5)
+
+(ci_justX <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # look good!
+# [1,]  4.905686e-02 5.153385e-02
+# [2,]  9.180887e-03 1.031171e-02
+# [3,]  4.779917e-03 5.581549e-03
+# [4,]  7.987256e-04 1.157946e-03
+# [5,]  3.102511e-04 5.643218e-04
+# [6,]  4.693957e-05 1.605862e-04
+# [7,]  1.170029e-05 9.206260e-05
+# [8,] -1.796992e-05 1.796992e-05
+
+xtable(ci_justX,digits=5)
+justXRes <- cbind(alpha,tyIerr$justX,ci_justX)
+xtable(justXRes,digits=5)
+
+(ci_justAuto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # NONE contain true value!!
+# [1,] 7.402685e-02 7.650385e-02
+# [2,] 1.940294e-02 2.053377e-02
+# [3,] 1.058178e-02 1.138341e-02
+# [4,] 2.439317e-03 2.798537e-03
+# [5,] 1.301470e-03 1.555541e-03
+# [6,] 3.195034e-04 4.331501e-04
+# [7,] 1.671826e-04 2.475449e-04
+# [8,] 4.347118e-05 7.941102e-05
+
+justAutoRes <- cbind(alpha,tyIerr$justAuto,ci_justAuto)
+xtable(justAutoRes,digits=5)
+
+rm(list=ls())
+
+
+#####
+# 25. 1M type I error runs
+
+# called 
+# qsub -q thornton.q -N testPheno batch_test_phenotypes.sh
+# which saves test_phenotypes_250k_2_typeIerr_sigmaA05_sigmaX05.RData
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+library(GWASTools)
+
+dat1 <- get(load("test_phenotypes_250k_typeIerr_sigmaA05_sigmaX05.RData"))
+dat2 <- get(load("test_phenotypes_250k_2_typeIerr_sigmaA05_sigmaX05.RData"))
+dat3 <- get(load("test_phenotypes_250k_3_typeIerr_sigmaA05_sigmaX05.RData"))
+dat4 <- get(load("test_phenotypes_150k_typeIerr_sigmaA05_sigmaX05.RData"))
+dat5 <- get(load("test_phenotypes_100k_typeIerr_sigmaA05_sigmaX05.RData"))
+
+totalRes <- rbind(dat1$mm_res,dat2$mm_res,dat3$mm_res,dat4$mm_res,dat5$mm_res)
+dim(totalRes); head(totalRes)
+table(totalRes$model) # 1e6 of each
+
+# get the type I error rate from these, for each of the three methods
+alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05,5e-06,1e-06)
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model=="both")) # 1000000
+(numX <- sum(totalRes$model=="x")) # 1000000
+(numAuto <- sum(totalRes$model=="auto")) # 1000000
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[totalRes$model=="both","pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[totalRes$model=="x","pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[totalRes$model=="auto","pval"]<alpha[a])/numAuto
+}
+tyIerr
+
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numX)
+(ci_x <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numAuto)
+(ci_auto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # all contain the true value
+
+library(xtable)
+xtable(cbind(tyIerr[,c(1,2)],paste("(",format(ci_both[,1],digits=6),", ",format(ci_both[,2],digits=6),
+                                   ")",sep=""),
+             tyIerr[,3],paste("(",format(ci_x[,1],digits=6),", ",format(ci_x[,2],digits=6),
+                              ")",sep=""),tyIerr[,4],
+             paste("(",format(ci_auto[,1],digits=6),", ",format(ci_auto[,2],digits=6),
+                   ")",sep="")),digits=6)
+
+
+####
+# called qsub -q thornton.q -N testPheno batch_test_phenotypes.sh
+# which saves test_phenotypes_250k_typeIerr_sigmaA03_sigmaX05.RData
+
+dat1 <- get(load("test_phenotypes_250k_typeIerr_sigmaA03_sigmaX05.RData"))
+dat2 <- get(load("test_phenotypes_250k_2_typeIerr_sigmaA03_sigmaX05.RData"))
+dat3 <- get(load("test_phenotypes_250k_3_typeIerr_sigmaA03_sigmaX05.RData"))
+dat4 <- get(load("test_phenotypes_250k_4_typeIerr_sigmaA03_sigmaX05.RData"))
+
+totalRes <- rbind(dat1$mm_res,dat2$mm_res,dat3$mm_res,dat4$mm_res)
+dim(totalRes); head(totalRes)
+table(totalRes$model) # 1e6 of each
+
+# get the type I error rate from these, for each of the three methods
+alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05,5e-06,1e-06)
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model=="both")) # 1000000
+(numX <- sum(totalRes$model=="x")) # 1000000
+(numAuto <- sum(totalRes$model=="auto")) # 1000000
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[totalRes$model=="both","pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[totalRes$model=="x","pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[totalRes$model=="auto","pval"]<alpha[a])/numAuto
+}
+tyIerr
+
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numX)
+(ci_x <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numAuto)
+(ci_auto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # all contain the true value
+
+library(xtable)
+xtable(cbind(tyIerr[,c(1,2)],paste("(",format(ci_both[,1],digits=3),", ",format(ci_both[,2],digits=3),
+                                   ")",sep=""),
+             tyIerr[,3],paste("(",format(ci_x[,1],digits=3),", ",format(ci_x[,2],digits=3),
+                              ")",sep=""),tyIerr[,4],
+             paste("(",format(ci_auto[,1],digits=3),", ",format(ci_auto[,2],digits=3),
+                   ")",sep="")),digits=6)
+
+
+# called qsub -q thornton.q -N testPheno batch_test_phenotypes.sh
+# which saves test_phenotypes_250k_typeIerr_sigmaA05_sigmaX03.RData
+
+dat1 <- get(load("test_phenotypes_250k_typeIerr_sigmaA05_sigmaX03.RData"))
+dat2 <- get(load("test_phenotypes_250k_2_typeIerr_sigmaA05_sigmaX03.RData"))
+dat3 <- get(load("test_phenotypes_250k_3_typeIerr_sigmaA05_sigmaX03.RData"))
+dat4 <- get(load("test_phenotypes_250k_4_typeIerr_sigmaA05_sigmaX03.RData"))
+
+totalRes <- rbind(dat1$mm_res,dat2$mm_res,dat3$mm_res,dat4$mm_res)
+dim(totalRes); head(totalRes)
+table(totalRes$model) # 1e6 of each
+
+# get the type I error rate from these, for each of the three methods
+alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05,5e-06,1e-06)
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model=="both")) # 1000000
+(numX <- sum(totalRes$model=="x")) # 1000000
+(numAuto <- sum(totalRes$model=="auto")) # 1000000
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[totalRes$model=="both","pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[totalRes$model=="x","pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[totalRes$model=="auto","pval"]<alpha[a])/numAuto
+}
+tyIerr
+
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numX)
+(ci_x <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numAuto)
+(ci_auto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # all contain the true value
+
+library(xtable)
+xtable(cbind(tyIerr[,c(1)],format(tyIerr[,2],digits=3,scientific=TRUE),paste("(",format(ci_both[,1],digits=3),", ",format(ci_both[,2],digits=3),
+                                   ")",sep=""),
+             format(tyIerr[,3],digits=3,scientific=TRUE),
+             paste("(",format(ci_x[,1],digits=3),", ",format(ci_x[,2],digits=3),
+                              ")",sep=""),
+             format(tyIerr[,4],digits=3,scientific=TRUE),
+             paste("(",format(ci_auto[,1],digits=3),", ",format(ci_auto[,2],digits=3),
+                   ")",sep="")),digits=6)
+
+## make a plot of these results
+library(ggplot2)
+
+######
+# sigmaA05_sigmaX03
+
+ci_both <- data.frame(ci_both)
+ci_auto <- data.frame(ci_auto)
+ci_x <- data.frame(ci_x)
+colnames(ci_both) <- colnames(ci_auto) <- colnames(ci_x) <- c("Lower","Upper")
+ci_both$model <- "both"
+ci_x$model <- "x"
+ci_auto$model <- "auto"
+ci_both$est <- tyIerr$both; ci_both$alpha <- tyIerr$alpha
+ci_auto$est <- tyIerr$justAuto; ci_auto$alpha <- tyIerr$alpha
+ci_x$est <- tyIerr$justX; ci_x$alpha <- tyIerr$alpha
+dfc <- rbind(ci_both[1:5,],ci_auto[1:5,],ci_x[1:5,])
+
+pdf("tyIerr_1M_cis_a05x03.pdf")
+ggplot(dfc,aes(x=model,y=est,color=as.character(alpha),ymin = Lower, ymax=Upper))  +
+  geom_abline(intercept=log10(dfc$alpha[1]),slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[2]), slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[3]),slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[4]),slope=0,color="gray") + 
+  geom_abline(intercept=log10(dfc$alpha[5]),slope=0,color="gray") + 
+  scale_y_log10() +
+  #geom_errorbar(aes(ymin=Lower,ymax=Upper),width=0.1,position=position_jitter(width=0.1,height=0)) +
+  #geom_point(size=3,position=position_jitter(width=0.1,height=0)) + 
+  geom_pointrange(position=position_jitter(width=0.1,height=0)) +
+  xlab("Model") + ylab("alpha") + 
+  ggtitle("Estimate (95% CI) of Type I Error Rate\nSigma_A=0.5, Sigma_X=0.3") +
+  theme_bw() 
+  dev.off()
+  
+######
+# sigmaA05_sigmaX05
+dat1 <- get(load("test_phenotypes_250k_typeIerr_sigmaA05_sigmaX05.RData"))
+dat2 <- get(load("test_phenotypes_250k_2_typeIerr_sigmaA05_sigmaX05.RData"))
+dat3 <- get(load("test_phenotypes_250k_3_typeIerr_sigmaA05_sigmaX05.RData"))
+dat4 <- get(load("test_phenotypes_150k_typeIerr_sigmaA05_sigmaX05.RData"))
+dat5 <- get(load("test_phenotypes_100k_typeIerr_sigmaA05_sigmaX05.RData"))
+
+totalRes <- rbind(dat1$mm_res,dat2$mm_res,dat3$mm_res,dat4$mm_res,dat5$mm_res)
+dim(totalRes); head(totalRes)
+table(totalRes$model) # 1e6 of each
+
+# get the type I error rate from these, for each of the three methods
+alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05,5e-06,1e-06)
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model=="both")) # 1000000
+(numX <- sum(totalRes$model=="x")) # 1000000
+(numAuto <- sum(totalRes$model=="auto")) # 1000000
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[totalRes$model=="both","pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[totalRes$model=="x","pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[totalRes$model=="auto","pval"]<alpha[a])/numAuto
+}
+tyIerr
+
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numX)
+(ci_x <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numAuto)
+(ci_auto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # all contain the true value
+
+
+ci_both <- data.frame(ci_both)
+ci_auto <- data.frame(ci_auto)
+ci_x <- data.frame(ci_x)
+colnames(ci_both) <- colnames(ci_auto) <- colnames(ci_x) <- c("Lower","Upper")
+ci_both$model <- "both"
+ci_x$model <- "x"
+ci_auto$model <- "auto"
+ci_both$est <- tyIerr$both; ci_both$alpha <- tyIerr$alpha
+ci_auto$est <- tyIerr$justAuto; ci_auto$alpha <- tyIerr$alpha
+ci_x$est <- tyIerr$justX; ci_x$alpha <- tyIerr$alpha
+dfc <- rbind(ci_both[1:5,],ci_auto[1:5,],ci_x[1:5,])
+
+pdf("tyIerr_1M_cis_a05x05.pdf")
+ggplot(dfc,aes(x=model,y=est,color=as.character(alpha),ymin = Lower, ymax=Upper))  +
+  geom_abline(intercept=log10(dfc$alpha[1]),slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[2]), slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[3]),slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[4]),slope=0,color="gray") + 
+  geom_abline(intercept=log10(dfc$alpha[5]),slope=0,color="gray") + 
+  scale_y_log10() +
+  #geom_errorbar(aes(ymin=Lower,ymax=Upper),width=0.1,position=position_jitter(width=0.1,height=0)) +
+  #geom_point(size=3,position=position_jitter(width=0.1,height=0)) + 
+  geom_pointrange(position=position_jitter(width=0.1,height=0)) +
+  xlab("Model") + ylab("alpha") + 
+  ggtitle("Estimate (95% CI) of Type I Error Rate\nSigma_A=0.5, Sigma_X=0.5") +
+  theme_bw() 
+dev.off()
+
+
+######
+# sigmaA03_sigmaX05
+
+dat1 <- get(load("test_phenotypes_250k_typeIerr_sigmaA03_sigmaX05.RData"))
+dat2 <- get(load("test_phenotypes_250k_2_typeIerr_sigmaA03_sigmaX05.RData"))
+dat3 <- get(load("test_phenotypes_250k_3_typeIerr_sigmaA03_sigmaX05.RData"))
+dat4 <- get(load("test_phenotypes_250k_4_typeIerr_sigmaA03_sigmaX05.RData"))
+
+totalRes <- rbind(dat1$mm_res,dat2$mm_res,dat3$mm_res,dat4$mm_res)
+dim(totalRes); head(totalRes)
+table(totalRes$model) # 1e6 of each
+
+# get the type I error rate from these, for each of the three methods
+alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05,5e-06,1e-06)
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model=="both")) # 1000000
+(numX <- sum(totalRes$model=="x")) # 1000000
+(numAuto <- sum(totalRes$model=="auto")) # 1000000
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[totalRes$model=="both","pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[totalRes$model=="x","pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[totalRes$model=="auto","pval"]<alpha[a])/numAuto
+}
+tyIerr
+
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numX)
+(ci_x <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # all contain the true value
+
+stdErr <- sqrt(alpha*(1-alpha)/numAuto)
+(ci_auto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # all contain the true value
+
+
+ci_both <- data.frame(ci_both)
+ci_auto <- data.frame(ci_auto)
+ci_x <- data.frame(ci_x)
+colnames(ci_both) <- colnames(ci_auto) <- colnames(ci_x) <- c("Lower","Upper")
+ci_both$model <- "both"
+ci_x$model <- "x"
+ci_auto$model <- "auto"
+ci_both$est <- tyIerr$both; ci_both$alpha <- tyIerr$alpha
+ci_auto$est <- tyIerr$justAuto; ci_auto$alpha <- tyIerr$alpha
+ci_x$est <- tyIerr$justX; ci_x$alpha <- tyIerr$alpha
+dfc <- rbind(ci_both[1:5,],ci_auto[1:5,],ci_x[1:5,])
+
+pdf("tyIerr_1M_cis_a03x05.pdf")
+ggplot(dfc,aes(x=model,y=est,color=as.character(alpha),ymin = Lower, ymax=Upper))  +
+  geom_abline(intercept=log10(dfc$alpha[1]),slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[2]), slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[3]),slope=0,color="gray") +
+  geom_abline(intercept=log10(dfc$alpha[4]),slope=0,color="gray") + 
+  geom_abline(intercept=log10(dfc$alpha[5]),slope=0,color="gray") + 
+  scale_y_log10() +
+  #geom_errorbar(aes(ymin=Lower,ymax=Upper),width=0.1,position=position_jitter(width=0.1,height=0)) +
+  #geom_point(size=3,position=position_jitter(width=0.1,height=0)) + 
+  geom_pointrange(position=position_jitter(width=0.1,height=0)) +
+  xlab("Model") + ylab("alpha") + 
+  ggtitle("Estimate (95% CI) of Type I Error Rate\nSigma_A=0.3, Sigma_X=0.5") +
+  theme_bw() 
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 26. Power graph for beta1=0.07 simulations
+
+source("powerGraph.R")
+
+totalRes <- get(load("pvals_power_results_ALL.RData"))
+dim(totalRes) # 4040976 12
+
+# be sure to exclude the NA rows.
+sum(is.na(totalRes$pval)) # 0
+
+ftable(totalRes$causal,totalRes$beta1,totalRes$model)
+#               auto   both      x
+# FALSE 0.05  326043 324437 326514
+#       0.06    7995   6142   8568
+#       0.07  303012 302618 303208
+#       0.08    8819   7158   9584
+#       0.09    7567   5548   8799
+#       0.1     8295   6293   9100
+#       0.13    8949   7242   9624
+#       0.15     994    994    994
+#       0.18    1000   1000   1000
+#       0.2     1000   1000   1000
+#       0.25     997    997    997
+#       0.3     1000   1000   1000
+# TRUE  0.05  326043 324437 326514
+#       0.06    7995   6142   8568
+#       0.07  303012 302618 303208
+#       0.08    8819   7158   9584
+#       0.09    7567   5548   8799
+#       0.1     8295   6293   9100
+#       0.13    8949   7242   9624
+#       0.15     994    994    994
+#       0.18    1000   1000   1000
+#       0.2     1000   1000   1000
+#       0.25     997    997    997
+#       0.3     1000   1000   1000
+
+powerGraph(totalRes,b=0.07,fn="power_3models_beta07.pdf")
+powerGraph(totalRes,b=0.05,fn="power_3models_beta05.pdf")
+
+rm(list=ls())
+
+
+#####
+# 27. Type I error rate from 600K runs (for comparison)
+
+# get the type I error rate from these, for each of the three methods
+alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05,5e-06,1e-06)
+
+totalRes <- get(load("pvals_power_results_ALL.RData"))
+dim(totalRes) # 4040976 12
+
+tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
+
+(numBoth <- sum(totalRes$model=="both"&!totalRes$causal)) # 589429
+(numX <- sum(totalRes$model=="x"&!totalRes$causal)) # 605388
+(numAuto <- sum(totalRes$model=="auto"&!totalRes$causal)) # 600671
+
+for(a in 1:length(alpha)){
+  tyIerr$both[a] <- sum(totalRes[!totalRes$causal&totalRes$model=="both","pval"]<alpha[a])/numBoth
+  tyIerr$justX[a] <- sum(totalRes[!totalRes$causal&totalRes$model=="x","pval"]<alpha[a])/numX
+  tyIerr$justAuto[a] <- sum(totalRes[!totalRes$causal&totalRes$model=="auto","pval"]<alpha[a])/numAuto
+}
+tyIerr
+#    alpha         both        justX     justAuto
+# 1  5e-02 5.004899e-02 5.001558e-02 7.486336e-02
+# 2  1e-02 9.948392e-03 9.923749e-03 1.941921e-02
+# 3  5e-03 4.977206e-03 5.013316e-03 1.085588e-02
+# 4  1e-03 9.707584e-04 9.847322e-04 2.764659e-03
+# 5  5e-04 4.801115e-04 4.747291e-04 1.521451e-03
+# 6  1e-04 8.578795e-05 9.259423e-05 4.025628e-04
+# 7  5e-05 4.214145e-05 3.968324e-05 2.294016e-04
+# 8  1e-05 9.030310e-06 8.818498e-06 5.772040e-05
+# 9  5e-06 6.020207e-06 5.878998e-06 3.552025e-05
+# 10 1e-06 3.010103e-06 2.939499e-06 5.920041e-06
+
+stdErr <- sqrt(alpha*(1-alpha)/numBoth)
+(ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) 
+
+stdErr <- sqrt(alpha*(1-alpha)/numX)
+(ci_x <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr))
+
+stdErr <- sqrt(alpha*(1-alpha)/numAuto)
+(ci_auto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) 
+
+library(xtable)
+xtable(cbind(tyIerr[,c(1,2)],paste("(",format(ci_both[,1],digits=3),", ",format(ci_both[,2],digits=3),
+                                   ")",sep=""),
+             tyIerr[,3],paste("(",format(ci_x[,1],digits=3),", ",format(ci_x[,2],digits=3),
+                              ")",sep=""),tyIerr[,4],
+             paste("(",format(ci_auto[,1],digits=3),", ",format(ci_auto[,2],digits=3),
+                   ")",sep="")),digits=6)
+
+
+# make a plot of these results
+# have 4 panels, a grid for sigmax, sigmaa = low or medium
+# plot log(type I error rate) for each, with cis
+library(ggplot2)
+library(reshape)
+
+tyIerr$ci_bothL <- ci_both[,1]
+tyIerr$ci_bothU <- ci_both[,2]
+
+tyIerr$ci_xL <- ci_x[,1]
+tyIerr$ci_xU <- ci_x[,2]
+
+tyIerr$ci_autoL <- ci_auto[,1]
+tyIerr$ci_autoU <- ci_auto[,2]
+
+tyIerr <- rbind(tyIerr,tyIerr,tyIerr)
+tyIerr$model <- c(rep("both",10),rep("auto",10),rep("x",10))
+tyIerr$est <- c(tyIerr$both[1:10],tyIerr$justAuto[1:10],tyIerr$justX[1:10])
+
+tyIerr <- tyIerr[,-c(2:4)]
+tyIerr$lower <- c(tyIerr$ci_bothL[1:10],tyIerr$ci_autoL[1:10],tyIerr$ci_xL[1:10])
+tyIerr$upper <- c(tyIerr$ci_bothU[1:10],tyIerr$ci_autoU[1:10],tyIerr$ci_xU[1:10])
+tyIerr <- tyIerr[,-c(2:7)]
+
+tyIerr$lower[tyIerr$lower==1e-20] <- 0
+
+kp <- c(5e-02,5e-03,5e-04,5e-05,5e-06)
+tyIerrSm <- tyIerr[is.element(tyIerr$alpha,kp),]
+ggplot(tyIerrSm,aes(x=model,y=log(est),fill=as.factor(alpha),ymin=log(lower), ymax=log(upper)))+geom_pointrange()+
+  coord_flip()+theme_bw()+xlab(expression(alpha)) +
+  ylab("log(Type I Error Rate)")
 
 
 

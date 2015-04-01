@@ -1,4 +1,3 @@
-
 source("allele_drop_functions.R")
 source("assocTestMixedModel_v7.R")
 source("estVarComp.R")
@@ -9,6 +8,8 @@ library(GWASTools)
 # 1. Estimate X chr relatedness
 # 2. Estimate for autosomal relatedness 
 # 10. Make histograms of X chr KC estimates 
+# 11. Remake KC estimated vs true plots
+# 12. Test Matt's X chr relatedness function
 
 
 
@@ -57,8 +58,8 @@ trueKinX[lower.tri(trueKinX,diag=TRUE)] <- tmp[,"V4"]
 trueKinXn <- trueKinX
 trueKinX <- data.frame(trueKinX)
 trueKinX$SEX <- SEX
-trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"] <- 2*trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]
 
+trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"] <- 2*trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]
 # is this correct???
 trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"] <- trueKinXn[trueKinX$SEX=="M",trueKinX$SEX=="F"]*sqrt(2)
 trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"] <- trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="M"]*sqrt(2)
@@ -120,7 +121,6 @@ abline(h=0)
 legend(0.08,-0.043,c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),pch=19)
 dev.off()
 
-
 # plot stratified on m-m, m-f and f-f pairs
 pdf("xchr_kc_estimatedVsTrue_FF.pdf")
 plot(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]),
@@ -139,6 +139,7 @@ points(jitter(trueKinXn[trueKinX$SEX=="F",trueKinX$SEX=="F"]),
 abline(h=0)
 legend("topleft",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),pch=19)
 dev.off()
+
 
 
 pdf("xchr_kc_estimatedVsTrue_FM.pdf")
@@ -486,6 +487,262 @@ hist(est35[toSel],xlab="Estimated X Chr KC",main=paste("Histogram of ", sum(toSe
 abline(v=1,col="red",lty=2,lwd=2)
 
 dev.off()
+
+rm(list=ls())
+
+
+#####
+# 11. Remake KC estimated vs true plots
+
+kinship <- get(load("xchr_kinshipMatrix/kinship_1kSNPs.RData"))
+kinship35 <- get(load("xchr_kinshipMatrix/kinship_3500SNPs.RData"))
+kinship10K <- get(load("xchr_kinshipMatrix/kinship_10kSNPs.RData"))
+kinship100K <- get(load("xchr_kinshipMatrix/kinship_100kSNPs.RData"))
+
+TEMP=c(2,1,2,1,1,1,2,2,1,2,1,2,1,2,1,2)
+SEX=rep(NA,16)
+SEX[TEMP==1]="M"
+SEX[TEMP==2]="F"
+
+tmp <- read.table("pedigree_16individs_output")
+trueKinX <- matrix(NA,nrow=16, ncol=16)
+trueKinX[lower.tri(trueKinX,diag=TRUE)] <- tmp[,"V4"]
+trueKinXn <- trueKinX
+diag(trueKinXn)[SEX=="F"] <- 1/2
+diag(trueKinXn)[SEX=="M"] <- 1
+
+kinship[SEX=="F",SEX=="F"] <- kinship[SEX=="F",SEX=="F"]/2
+kinship[SEX=="F",SEX=="M"] <- kinship[SEX=="F",SEX=="M"]/sqrt(2)
+kinship[SEX=="M",SEX=="F"] <- kinship[SEX=="M",SEX=="F"]/sqrt(2)
+
+kinship35[SEX=="F",SEX=="F"] <- kinship35[SEX=="F",SEX=="F"]/2
+kinship35[SEX=="F",SEX=="M"] <- kinship35[SEX=="F",SEX=="M"]/sqrt(2)
+kinship35[SEX=="M",SEX=="F"] <- kinship35[SEX=="M",SEX=="F"]/sqrt(2)
+
+kinship10K[SEX=="F",SEX=="F"] <- kinship10K[SEX=="F",SEX=="F"]/2
+kinship10K[SEX=="F",SEX=="M"] <- kinship10K[SEX=="F",SEX=="M"]/sqrt(2)
+kinship10K[SEX=="M",SEX=="F"] <- kinship10K[SEX=="M",SEX=="F"]/sqrt(2)
+
+kinship100K[SEX=="F",SEX=="F"] <- kinship100K[SEX=="F",SEX=="F"]/2
+kinship100K[SEX=="F",SEX=="M"] <- kinship100K[SEX=="F",SEX=="M"]/sqrt(2)
+kinship100K[SEX=="M",SEX=="F"] <- kinship100K[SEX=="M",SEX=="F"]/sqrt(2)
+
+
+pdf("xchr_kc_estimatedVsTrue_horizLines.pdf")
+diffMat <- trueKinXn[lower.tri(trueKinXn,diag=TRUE)]-kinship[lower.tri(kinship,diag=TRUE)]
+x <- trueKinXn[lower.tri(trueKinXn,diag=TRUE)]
+plot(jitter(x), diffMat,main="All Pairs",
+     xlab="Theoretical KC",ylab="Theoretical KC - Estimated KC",cex.main=1.5,
+     col=adjustcolor("purple",alpha=0.6),pch=19,cex.lab=1.5,cex.axis=1.5)
+abline(v=0,col="gray"); abline(v=1,col="gray")
+abline(v=(1/2),col="gray"); abline(v=(1/4),col="gray")
+abline(v=(3/16),col="gray"); abline(v=(6/16),col="gray")
+abline(v=(1/8),col="gray"); abline(v=(3/32),col="gray")
+abline(v=(1/16),col="gray") #; abline(v=(1/32),col="gray")
+points(jitter(x),
+       x-kinship35[lower.tri(kinship100K,diag=TRUE)], col=adjustcolor("orange",alpha=0.6),pch=19)
+points(jitter(x),
+       x-kinship10K[lower.tri(kinship10K,diag=TRUE)], col=adjustcolor("red",alpha=0.6),pch=19)
+points(jitter(x),
+       x-kinship100K[lower.tri(kinship100K,diag=TRUE)], col=adjustcolor("cyan",alpha=0.6),pch=19)
+abline(h=0)
+legend("bottomright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),
+       bg="white",pch=19,cex=1.2)
+dev.off()
+
+
+# plot stratified on m-m, m-f and f-f pairs
+pdf("xchr_kc_estimatedVsTrue_FF_horizLines.pdf")
+plot(jitter(trueKinXn[SEX=="F",SEX=="F"]),cex.main=1.5,
+     trueKinXn[SEX=="F",SEX=="F"]-kinship[SEX=="F",SEX=="F"],
+     xlab="Expected KC",ylab="Expected KC - Estimated KC",main="F-F Pairs",
+     col=adjustcolor("purple",alpha=0.6),pch=19,cex.lab=1.5,cex.axis=1.5, ylim=c(-0.04,0.04))
+abline(v=0,col="gray")
+abline(v=(1/2),col="gray"); abline(v=(1/4),col="gray")
+abline(v=(3/16),col="gray"); abline(v=(6/16),col="gray")
+abline(v=(1/8),col="gray"); abline(v=(3/32),col="gray")
+abline(v=(1/16),col="gray") #; abline(v=(1/32),col="gray")
+points(jitter(trueKinXn[SEX=="F",SEX=="F"]),
+       trueKinXn[SEX=="F",SEX=="F"]-kinship35[SEX=="F",SEX=="F"],
+       col=adjustcolor("orange",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="F",SEX=="F"]),
+       trueKinXn[SEX=="F",SEX=="F"]-kinship10K[SEX=="F",SEX=="F"], 
+       col=adjustcolor("red",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="F",SEX=="F"]),
+       trueKinXn[SEX=="F",SEX=="F"]-kinship100K[SEX=="F",SEX=="F"],
+       col=adjustcolor("cyan",alpha=0.6),pch=19)
+abline(h=0)
+legend("topleft",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),
+       bg="white",cex=1.2,pch=19)
+dev.off()
+
+
+
+pdf("xchr_kc_estimatedVsTrue_FM_horizLines.pdf")
+plot(jitter(trueKinXn[SEX=="F",SEX=="M"]),ylim=c(-0.06,0.05),
+     trueKinXn[SEX=="F",SEX=="M"]-kinship[SEX=="F",SEX=="M"],
+     xlab="Expected KC",ylab="Expected KC - Estimated KC",main="F-M Pairs",cex.main=1.5,
+     col=adjustcolor("purple",alpha=0.6),pch=19,cex.lab=1.5,cex.axis=1.5)
+abline(v=0,col="gray")
+abline(v=(1/2),col="gray"); abline(v=(1/4),col="gray")
+abline(v=(3/16),col="gray"); abline(v=(6/16),col="gray")
+abline(v=(1/8),col="gray") #; abline(v=(3/32),col="gray")
+#abline(v=(1/16),col="gray") #; abline(v=(1/32),col="gray")
+
+points(jitter(trueKinXn[SEX=="M",SEX=="F"]),
+       trueKinXn[SEX=="M",SEX=="F"]-kinship[SEX=="M",SEX=="F"], 
+       col=adjustcolor("purple",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="F",SEX=="M"]),
+       trueKinXn[SEX=="F",SEX=="M"]-kinship35[SEX=="F",SEX=="M"], 
+       col=adjustcolor("orange",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="M",SEX=="F"]),
+       trueKinXn[SEX=="M",SEX=="F"]-kinship35[SEX=="M",SEX=="F"], 
+       col=adjustcolor("orange",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="F",SEX=="M"]),
+       trueKinXn[SEX=="F",SEX=="M"]-kinship10K[SEX=="F",SEX=="M"], 
+       col=adjustcolor("red",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="M",SEX=="F"]),
+       trueKinXn[SEX=="M",SEX=="F"]-kinship10K[SEX=="M",SEX=="F"], 
+       col=adjustcolor("red",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="F",SEX=="M"]),
+       trueKinXn[SEX=="F",SEX=="M"]-kinship100K[SEX=="F",SEX=="M"],
+       col=adjustcolor("cyan",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="M",SEX=="F"]),
+       trueKinXn[SEX=="M",SEX=="F"]-kinship100K[SEX=="M",SEX=="F"],
+       col=adjustcolor("cyan",alpha=0.6),pch=19)
+abline(h=0)
+legend("bottomright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),
+       pch=19,cex=1.2,bg="white")
+dev.off()
+
+
+pdf("xchr_kc_estimatedVsTrue_MM.pdf")
+plot(jitter(trueKinXn[SEX=="M",SEX=="M"]),
+     trueKinXn[SEX=="M",SEX=="M"]-kinship[SEX=="M",SEX=="M"],main="M-M Pairs",cex.main=1.5,
+     xlab="Expected KC",ylab="Expected KC - Estimated KC",#ylim=c(-0.1,0.1),
+     col=adjustcolor("purple",alpha=0.6),pch=19,cex.lab=1.5,cex.axis=1.5)
+abline(v=0,col="gray"); abline(v=1,col="gray")
+abline(v=(1/2),col="gray"); abline(v=(1/4),col="gray")
+abline(v=(6/16),col="gray") #; abline(v=(6/16),col="gray")
+#abline(v=(1/8),col="gray") #; abline(v=(3/32),col="gray")
+#abline(v=(1/16),col="gray") #; abline(v=(1/32),col="gray")
+
+points(jitter(trueKinXn[SEX=="M",SEX=="M"]),
+       trueKinXn[SEX=="M",SEX=="M"]-kinship35[SEX=="M",SEX=="M"], 
+       col=adjustcolor("orange",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="M",SEX=="M"]),
+       trueKinXn[SEX=="M",SEX=="M"]-kinship10K[SEX=="M",SEX=="M"], 
+       col=adjustcolor("red",alpha=0.6),pch=19)
+points(jitter(trueKinXn[SEX=="M",SEX=="M"]),
+       trueKinXn[SEX=="M",SEX=="M"]-kinship100K[SEX=="M",SEX=="M"],
+       col=adjustcolor("cyan",alpha=0.6),pch=19)
+abline(h=0)
+legend("bottomright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),
+       pch=19,cex=1.2,bg="white")
+dev.off()
+
+##
+## plot autosomal KC, estimated vs true
+
+kinship <- get(load("auto_kinshipMatrix/kinship_1kSNPs.RData"))
+kinship10K <- get(load("auto_kinshipMatrix/kinship_10kSNPs.RData"))
+kinship100K <- get(load("auto_kinshipMatrix/kinship_100kSNPs.RData"))
+kinship3500 <- get(load("auto_kinshipMatrix/kinship_3500SNPs.RData"))
+
+kinship <- kinship/2
+kinship10K <- kinship10K/2
+kinship100K <- kinship100K/2
+kinship3500 <- kinship3500/2
+
+# kinship matrix
+library(kinship2)
+tmp <- read.table("pedigree_16individs.txt")
+tmp[tmp[,5]==0,5] <- 2
+ped <- pedigree(tmp[,2],dadid=tmp[,3],momid=tmp[,4],sex=tmp[,5])
+kin <- kinship(ped)
+
+pdf("auto_kc_estimatedVsTrue_horizLines.pdf")
+plot(jitter(kin),
+     kin-kinship,main="All Pairs, Autosomes",cex.main=1.5,ylim=c(-0.05,0.05),
+     xlab="Expected KC",ylab="Expected KC - Estimated KC",
+     col=adjustcolor("purple",alpha=0.6),pch=19,cex.lab=1.5,cex.axis=1.5)
+abline(v=0,col="gray")
+abline(v=(1/2),col="gray"); abline(v=(1/4),col="gray")
+abline(v=(1/8),col="gray"); abline(v=(1/16),col="gray")
+
+points(jitter(kin),
+       kin-kinship3500, 
+       col=adjustcolor("orange",alpha=0.6),pch=19)
+points(jitter(kin),
+       kin-kinship10K, 
+       col=adjustcolor("red",alpha=0.6),pch=19)
+points(jitter(kin),
+       kin-kinship100K,
+       col=adjustcolor("cyan",alpha=0.6),pch=19)
+abline(h=0)
+legend("bottomright",c("1k SNPs","3500 SNPs","10k SNPs","100k SNPs"),col=c("purple","orange","red","cyan"),
+       pch=19,cex=1.2,bg="white")
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 12. Test Matt's X chr relatedness function
+
+# use simulated genotype data for the 16 person ped
+# run Matt's function
+# see how close it gets to the true X chr KC estimates
+
+source("allele_drop_functions.R")
+source("assocTestMixedModel_v7.R")
+source("estVarComp.R")
+library(GWASTools)
+
+source("pcrelate_X.R")
+
+FAMNUM1=60;
+unrelateds=200
+people=FAMNUM1*16+unrelateds
+
+TEMP=c(2,1,2,1,1,1,2,2,1,2,1,2,1,2,1,2)
+SEX=rep(NA,16)
+SEX[TEMP==1]="M"
+SEX[TEMP==2]="F"
+
+f1=.4
+
+
+# estimate 1000 xchr loci
+set.seed(6422)
+genoX <- 2*Family_alleles_NmarkerX(rep(f1,50000),50000,SEX)
+genoX[SEX=="M",] <- 2*genoX[SEX=="M",]
+
+genoUnr <- matrix(NA,nrow=500,ncol=50000)
+for(i in 1:250){
+  genoUnr[i,] <- 2*INDIV_alleles_Nmarker(rep(f1,50000),50000)
+}
+for(i in 251:500){
+  genoUnr[i,] <- 4*INDIV_alleles_NmarkerX(rep(f1,50000),50000)
+}
+
+# so last 500 samples: first 250 are females, last 250 are males
+geno <- rbind(genoX,genoUnr)
+dim(geno) # 516 50000
+
+
+# estimate x chr relatedness with matt's function
+scan <- data.frame(scanID=1:nrow(geno),sex=c(SEX,rep("F",250),rep("M",250)))
+scan <- ScanAnnotationDataFrame(scan)
+data <- MatrixGenotypeReader(genotype=t(geno),snpID=1:50000,chromosome=as.integer(rep(23,50000)),
+                             position=1:50000,scanID=1:nrow(geno))
+genoData <- GenotypeData(data,scanAnnot=scan)
+res <- pcrelate(genoData,Xchr=TRUE,unrel.set=c(1:5,17:516))
+
+tmp <- read.table("pedigree_16individs_output")
+
+cbind(res$kinship[1:20,],tmp[1:20,])
+# they're the same!!!
 
 
 

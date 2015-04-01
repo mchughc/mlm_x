@@ -19,6 +19,7 @@
 % \geometry{landscape} % set up the page for landscape
 %   read geometry.pdf for detailed page layout information
 \usepackage{multicol,multirow,array}
+\usepackage[usenames,dvipsnames]{xcolor}
 \usepackage{graphicx} % support the \includegraphics command and options
 
 % \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
@@ -130,9 +131,9 @@ Finally, we calculate the covariance between a pair of genotypes where one is a 
 cov(\snpXF,\snpXM) &= \mathbb{E}(\snpXF \snpXM) -\mathbb{E}(\snpXF)\mathbb{E}(\snpXM)\\
  &=  \mathbb{E}(\snpXF \snpXM|\mbox{IBD})\mathbb{P}(\mbox{IBD}) \\
 &\mbox{     }+\mathbb{E}(\snpXF \snpXM|\mbox{no IBD})\mathbb{P}(\mbox{no IBD})  -(2p)^2\\
-&= (4p^2+2(2p(1-p)))\Phi_X+4p^2(1-\Phi_X)-4p^2\\
+&= [4p^2+2(2p(1-p))]\Phi_X+[4p^3+4p^2(1-p)](1-\Phi_X)-4p^2\\
 &= 4p(1-p)\Phi_X
-\end{align}
+\end{align} 
 We can now see that using the X chromosome kinship values from Table~\ref{kc_auto_x}, the variance for a female and male SNP is indeed as calculated in Equations~\ref{fem_var} and~\ref{mal_var} after incorporating the self-kinship values. 
 Thus, the variance for a given individual $i$ for an X chromosome SNP is 
 \begin{align}
@@ -282,57 +283,57 @@ and when fitting the misspecified, usual model, $y=\beta_1 \snpX + g_A + \epsilo
 misspecified model $y=\beta_1 \snpX + g_X + \epsilon$ for comparison.
 From 1,000 iterations using 8,000 samples (500 pedigrees as displayed in Figure~\ref{ped}) of which 5,500 are related and 2,500 are unrelated, we set the 
 parameters as shown in Table~\ref{params_sim}.
-Because the usual model is not properly calibrated, we compare the false positive rate to the true positive rate.
+Because the usual model is not properly calibrated, to fairly compare the power of each method, we consider a range of $\alpha$ significance levels. For each $\alpha$ value, we calculate the true positive and false positive rate for each model. Then, we can compare the true positive to the false positive rate for each model.
 In this manner, we can identify how many true positives (the power) we are able to detect for a given false positive rate (type I error). 
 
-\begin{table}[ht]
-\centering
-\begin{tabular}{crrr}
-\hline
-Parameter & Sim1 & Sim2&Sim3\\ \hline
-$\beta_1$& 0.8 &  0.3& 0.3\\ 
-$\sigma_A^2$&0.3& 0.3& 0.3\\
-$\sigma_X^2$&0.8 & 0.8& 0.3\\
-$\sigma_{\epsilon}^2$&1& 1& 1\\\hline
-$\sigma_{XT}^2$ & 1.2096& 0.8576& 0.3576\\ \hline
-\end{tabular}
-\caption{Parameters used in simulations.}
-\label{params_sim}
-\end{table} 
-When the effect size reaches 0.18, all three models tested always found the true signal.
-Plots showing the 
-The type I error, however, differed in each of the models. Table~\ref{typeIerror} shows the type I errors when fitting the two models.
 
 \bgroup
 \def\arraystretch{1.5}
+\footnotesize
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|rrrrr}
+\begin{tabular}{rrrrr}
   \hline
-$\alpha$& 0.05 & 0.01 & 0.005 & 0.001 & 0.0001 \\ \hline
-X + Auto adj & 0.04604 & 0.00834 & 0.00450 & 0.00092 & 0 \\ 
-  Auto adj only & 0.06823 & 0.01960 & 0.01034 & 0.00133 & 0 \\ 
-X chr adj only & 0.04446 & 0.00817 & 0.00509 & 0.00100 & 0 \\
+& $\alpha$ & Auto + X  (95\% CI) & X (95\% CI)& Auto (95\% CI) \\ 
+  \hline
+\parbox[t]{2mm}{\multirow{10}{*}{\rotatebox[origin=c]{90}{$\sigma_X^2=0.5, \sigma_A^2=0.5$}}}   & 0.05 & 0.0495  (0.0491, 0.050) & 0.0496  (0.0491, 0.050) & 0.0587 (0.058, 0.059) \\ 
+   & 0.01 & 0.00987  (0.00968, 0.0101) & 0.00984 (0.00964, 0.0100) & 0.0131 (0.0129, 0.0133) \\ 
+   & 0.005 & 0.00494  (0.00480, 0.00507) & 0.00495 (0.00481, 0.00508) & 0.00679 (0.00665, 0.00693) \\ 
+   & 0.001 & 0.00100  (9.39e-04, 0.00106) & 0.000988 (9.26e-04, 0.00105) & 0.00155 (0.00149, 0.00161) \\ 
+   & 5e-04 & 5.00e-04 (4.56e-04, 5.44e-04) & 5.15e-04  (4.71e-04, 5.59e-04) & 8.22e-04  (7.78e-04, 8.66e-04) \\ 
+ & 1e-04 & 1.32e-04  (1.12e-04, 1.52e-04) & 1.31e-04  (1.11e-04, 1.51e-04) & 1.94e-04  (1.74e-04, 2.14e-04) \\ 
+   & 5e-05 & 6.2e-05  (4.81e-05, 7.59e-05) & 6.3e-05  (4.91e-05, 7.69e-05) & 1.22e-04  (1.08e-04, 1.36e-04) \\ 
+   & 1e-05 & 1.9e-05 (1.28e-05, 2.52e-05) & 1.9e-05  (1.28e-05, 2.52e-05) & 3.1e-05  (2.48e-05, 3.72e-05) \\ 
+   & 5e-06 & 8e-06 (3.62e-06, 1.24e-05) & 5e-06 (6.17e-07, 9.38e-06) & 1.8e-05  (1.36e-05, 2.24e-05) \\ 
+   & 1e-06 & 1e-06  (-9.60e-07, 2.96-06) & 1e-06 (-9.60e-07, 2.96e-06) & 3e-06  (1.04e-06, 4.96e-06) \\ 
+   \hline \hline
+\parbox[t]{2mm}{\multirow{10}{*}{\rotatebox[origin=c]{90}{$\sigma_X^2=0.5, \sigma_A^2=0.3$}}}  & 0.05 & 0.0499  (0.0495, 0.0503) & 0.0499  (0.0494, 0.503) & 0.0598  (0.0594, 0.0603) \\ 
+  & 0.01 & 0.0101  (0.00988, 0.0103) & 0.0101  (0.00986, 0.0103) & 0.0134 (0.0132, 0.0136) \\ 
+   & 0.005 & 0.00504  (0.00490, 0.00518) & 0.00504  (0.00490, 0.00517) & 0.00711 (0.00697, 0.00725) \\ 
+   & 0.001 & 0.00106  (0.00100, 0.00112) & 0.00105  (9.91e-04, 0.00111) & 0.00163  (0.00157, 0.00170) \\ 
+   & 5e-04 & 5.31e-04 (4.87e-04, 5.75e-04) & 5.32e-04 (4.88e-04, 5.76e-04) & 8.69e-04 (8.25e-04, 9.13e-04) \\ 
+   & 1e-04 & 1.01e-04 (8.14e-05, 1.21e-04) & 9.8e-05 (7.84e-05, 1.18e-04) & 1.92e-04 (1.72e-04, 2.12e-04) \\ 
+ & 5e-05 & 5.0e-05 (3.61e-05, 6.39e-05) & 5.1e-05 (3.71e-05, 6.49e-05) & 9.7e-04 (8.31e-05, 1.11e-04) \\ 
+& 1e-05 & 9.0e-06 (2.80e-06, 1.52e-05) & 9.0e-06 (2.80e-06, 1.52e-05) & 2.1e-05 (1.48e-05, 2.72e-05) \\ 
+ & 5e-06 & 7.0e-06 (2.62e-06, 1.14e-05) & 7.0e-06 (2.62e-06, 1.14e-05) & 1.1e-05  (6.62e-06, 1.54e-05) \\ 
+  &  1e-06 & 2.0e-06 (4.00e-08, 3.96e-06) & 1.0e-06 (-9.60e-07, 2.96e-06) & 7.0e-06  (5.04e-06, 8.96e-06) \\ 
+   \hline \hline
+\parbox[t]{2mm}{\multirow{10}{*}{\rotatebox[origin=c]{90}{$\sigma_X^2=0.3, \sigma_A^2=0.5$}}}  & 0.05 & 0.0500 (0.0495, 0.0504) & 0.0500 (0.0496, 0.0504) & 0.0530 (0.0526, 0.0535) \\ 
+ & 0.01 & 0.0100  (0.00982, 0.0102) & 0.0100 (0.00982, 0.0102) & 0.0110 (0.0108, 0.0112) \\ 
+ & 0.005 & 0.00502  (0.00488, 0.00515) & 0.00504 (0.00490, 0.00518) & 0.00559 (0.00545, 0.00573) \\ 
+ & 0.001 & 9.66e-04  (9.04e-04, 0.00103) & 9.79e-04 (9.17e-04, 0.00104) & 0.00112 (0.00106, 0.00118) \\ 
+ & 5e-04 & 4.62e-04  (4.18e-04, 5.06e-04) & 4.61e-04  (4.17e-04, 5.05e-04) & 5.46e-04  (5.02e-04, 5.90e-04) \\ 
+ & 1e-04 & 8.60e-05  (6.64e-05, 1.06e-04) & 8.00e-05  (6.04e-05, 9.96e-05) & 1.14e-04  (9.44e-05, 1.34e-04) \\ 
+ & 5e-05 & 3.20e-05  (1.81e-05, 4.59e-05) & 2.80e-05  (1.41e-05, 4.19e-05) & 4.50e-05  (3.11e-05, 5.89e-05) \\ 
+ & 1e-05 & 1.00e-05  (3.80e-06, 1.62e-05) & 1.00e-05 (3.80e-06, 1.62e-05) & 1.10e-05  (4.80e-06, 1.72e-05) \\ 
+ & 5e-06 & 6.00e-06  (1.62e-06, 1.04e-05) & 2.00e-06  (-2.38e-06, 6.38e-06) & 8.00e-06  (3.62e-06, 1.24e-05) \\ 
+ & 1e-06 & 0  (-1.96e-06, 1.96e-06) & 0 (-1.96e-06, 1.96e-06) & 0 (-1.96e-06, 1.96e-06) \\ 
    \hline
+
 \end{tabular}
-\caption{Type I error from 12,000 iterations of an 8,000 sample simulation. The true model is as described in Equation~\ref{model3} and the results are shown from fitting the true model, the model without fitting X chromosome effects, $y=\beta_1 \snpX + g_A + \epsilon$, and the model fitting only X chromosome effects $y=\beta_1 \snpX + g_X + \epsilon$.}\label{typeIerror}
+\caption{Type I error from 1,000,000 iterations of an 8,000 sample simulation. The true model is simulated to be $y=\beta_1 \snpX + g_A + g_X + \epsilon$ and the results are shown from fitting the true model, the model without fitting X chromosome effects, $y=\beta_1 \snpX + g_A + \epsilon$, and the model fitting only X chromosome effects $y=\beta_1 \snpX + g_X + \epsilon$. }\label{typeIerror}
 \end{table} 
 
-
-\begin{table}[ht]
-\centering \small
-\begin{tabular}{l|lll}
-  \hline
- $\alpha$ & Auto + X & X & Auto \\ 
-  \hline
-0.05 (0.0496, 0.0504) & 0.04604 (0.04214, 0.04994) & 0.04446 (0.04056, 0.04836) & 0.06823 (0.06433, 0.07213) \\ 
-0.01 (0.00960, 0.0104) & 0.00834 (0.00656, 0.01012) & 0.00817 (0.00639, 0.00996) & 0.01960 (0.01782, 0.02138) \\ 
-0.005 (0.00460, 0.0054) & 0.00450 (0.00324, 0.00577) & 0.00509 (0.00383, 0.00635) & 0.01034 (0.00908, 0.01161) \\ 
-0.001 (6.00e-04, 0.0014) & 0.00092 (0.00035, 0.00148) & 0.00100 (0.00044, 0.00157) & 0.00133 (0.00077, 0.00190) \\ 
- 5e-04 (9.98e-05, 0.0009) & 0 (-0.00040, 0.00040) & 0.00017 (-0.00023, 0.00057) & 0 (-0.00040, 0.00040) \\ 
-   \hline
-\end{tabular}
-\end{table}
 
 
 
@@ -623,6 +624,180 @@ To perform mixed model association testing on X chromsome SNPs, there are a few 
 \item Estimate relatedness on the X chromosome, call the results $\Phi_X$. Use independent (pruned) SNPs, excluding the pseudoautosomal regions. In OLGA, the number of pruned X chromosome SNPs was approximately 3,500. Histograms of the results for theoretical vs estimated in 3,500 simulated X chromosome SNPs for the pedigree in Figure~\ref{ped} are shown in the file `hist\_xchrKC\_byRelType.pdf.' 
 \item Run Matt's MLM program, including as a random effect the relatedness matrix on the X chromosome, $\Phi_X$. We are investigating the implications of including $\Phi_A$ as well, when testing a SNP on the X chromsome for association.
 \end{enumerate}
+
+
+
+
+\clearpage
+\newpage
+\normalsize
+\section*{Association Testing on the X Chromosome: An Application to HCHS/SOL}
+
+\subsection*{Red Blood Cell Traits}
+I performed association tests on the HCHS/SOL genotyping data, examining a blood cell count trait, red blood cell LABA2 (\texttt{316987}). There have been previously published hits on the X chromosome that replicated in SOL. Thus, it was a good candidate for testing out some methodology.
+To perform the final association test, I fit five models including or excluding fixed and random effects for X chromosome structure specifically. There were a total of 12,488 samples included (see presentation from trait for exclusion criteria).
+
+Need to discuss exercise of estimating x chr KC after adjustment for either autosomal or x chr pcs.
+note that x KC adj for auto pc still yields structure, implying that pop structure is different on x and something remains beyond what is detected on the autosomes. we want to include the autosomal pcs for precision, even though we don't think that the autosomal population structure directly affects the x chromosome genotypes, ie. we aren't concerned about confounding due to autosomal ancestry.
+
+To calculate the X chromosome principal components (PCs), we first find a pruned set of X chromosome SNPs.
+To do this, we took all SNPs on the X chromosome that passed the quality filter, of which there were 50,781. Then, for all 10,272 unrelated study samples (unrelated calculated from the autosomes, at degree 4) excluding PC outliers (Asian and Central American outliers), we pruned to a set of independent SNPs using LD pruning with a threshold of 0.32 and a sliding window size of 10Mb. This resulted in exactly 3,600 independent SNPs on the X chromosome.
+To calculate the PCs, I used \texttt{pcair} on the pruned set of X chromosome SNPs. A set of 10,287 unrelated samples was specified (autosomal unrelated at degree 4, excluding outliers as before) and PCs were projected onto 2,497 relatives for a total of 12,784 samples.
+The first two EVs showed structure, while the EVs 3 and higher did not identify any large-scale structure among the samples. Thus, EVs 1-2 will be used as fixed effects in the MLM-X model.
+
+The X chromosome KC was calculated using \texttt{pcrelate} on the LD-pruned set of 3,600 X chromosome SNPs. Again, an unrelated set of 10,287 samples was specified. A total of 12,771 scans was included in the KC matrix, which is 12,784 as above with a further 13 scans excluded due to anomalies that spanned the entire X chromosome. The KC matrix was ancestry-adjusted for X chromosome EVs 1-2 as described above. We thus have a KC matrix that estimates relatedness on the X chromosome after adjusting for X chromosome population structure captured in the first two PCs on the X chromosome.
+
+The estimated proportion variance from each of the components included in the model is as displayed in Table~\ref{table:varComp}. 
+Items to note:
+\begin{itemize}
+\item prop variance explained by autosomal polygenic effects doesn't change with the addition of x chromosome, rather, the environment proportion goes down
+\item x chromosome polygenic effects explain $\sim$3\%, whereas the autosomal chromosomes 1-22 explain $\sim$28\%, or $\sim$1.3\% per chromosome. the X explains more than is explained by a single autosome, assuming each autosome contributes equally
+\item x chromosome polygenic effects are non-zero for this trait
+\item x chromosome effects are non-zero, even when including the autosomal polygenic effects. indicates autosomal effects can't explain all genetic effects
+\item the var components show an x chromosome effect for this trait, even without an association test
+\end{itemize}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{r|ccccc}
+  \hline
+ & autosomal KC & block group & environment & household & X chromosome KC  \\
+  \hline
+auto PC 1-5 &\multirow{2}{*}{0.28473} & \multirow{2}{*}{0.00363} & \multirow{2}{*}{0.66218} & \multirow{2}{*}{0.04945} & \\
+auto KC & & \\  \hline
+X PC 1-2, auto PC 1-5&\multirow{2}{*}{0.28453} & \multirow{2}{*}{0.00396} & \multirow{2}{*}{0.63266} & \multirow{2}{*}{0.04950} & \multirow{2}{*}{ 0.02935} \\ 
+X KC, auto KC & & \\ \hline
+X PC 1-2, auto PC 1-5 & \multirow{2}{*}{} & \multirow{2}{*}{0.00271} & \multirow{2}{*}{0.87855} & \multirow{2}{*}{0.08710} & \multirow{2}{*}{0.03164} \\
+X KC \textcolor{white}{auto KC} & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5}& \multirow{2}{*}{0.28457} & \multirow{2}{*}{0.00402}& \multirow{2}{*}{0.63103}& \multirow{2}{*}{0.05043}& \multirow{2}{*}{0.02995} \\
+X KC, auto KC & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5} & \multirow{2}{*}{} & \multirow{2}{*}{0.00273} & \multirow{2}{*}{0.87692}& \multirow{2}{*}{0.08806}& \multirow{2}{*}{0.03228}\\
+X KC \textcolor{white}{auto KC} & & \\ \hline 
+\end{tabular}
+\caption{Estimated proportion variance for each of the components.}
+\label{table:varComp}
+\end{table}
+
+The $\lambda$ values estimated from fitting these models on X chromosome SNPs specifically, and across the genome (autosomal + X chromsome SNPs) resulted as shown in Table~\ref{table:lambda}. 
+The $\lambda$ values could be high due to true association, but the same SNPs are considered for all rows of this table. Also, the heightened $\lambda$ value on the autosomal model indicates just using autosomal structure/relatedness doesn't capture all the structure seen on the x chromosome.
+Also interesting that highest $\lambda$ values for X chr, genome-wide, are those adjusted for the wrong type of structure/relatedness. this was shown here with the $\lambda$ values, ie. trait specific, but also non-trait related in the pc adj for autosomal vs x chromosome structure.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{r|cc}
+  \hline
+ & X chromosome & genome-wide \\ 
+  \hline
+& \multirow{2}{*}{1.059} & \multirow{2}{*}{1.080}\\
+auto KC & & \\ \hline
+auto PC 1-5 & \multirow{2}{*}{1.116} & \multirow{2}{*}{1.051} \\ 
+auto KC & & \\ \hline
+X PC 1-2, auto PC 1-5&\multirow{2}{*}{1.043} & \multirow{2}{*}{1.048} \\ 
+X KC, auto KC & & \\ \hline
+X PC 1-2, auto PC 1-5 & \multirow{2}{*}{1.063} & \multirow{2}{*}{1.106} \\
+X KC \textcolor{white}{auto KC} & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5}& \multirow{2}{*}{1.049} & \multirow{2}{*}{1.053} \\
+X KC, auto KC & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5} & \multirow{2}{*}{1.067} & \multirow{2}{*}{1.109} \\
+X KC \textcolor{white}{auto KC} & & \\ \hline 
+\end{tabular}
+\caption{The $\lambda$ genomic inflation factor calculated from association testing on the X chromosome with the RBC trait, using observed SNPs and filtering using the composite filter and MAC$>$30, MAF$>0.0012$ for a total of 43,868 SNPs. The same filters were used for the genome-wide set of SNPs for a total of 2,128,491 SNPs across the autosomes and X chromosome.}
+\label{table:lambda}
+\end{table}
+
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrl}
+  \hline
+ & Effect Size (SE) & Stat & p-value \\ 
+  \hline
+autosomal & 0.1314 (0.0145) & 81.9377 & 1.40447e-19 \\ \hline
+X PC 1-2, auto PC 1-5 & \multirow{2}{*}{0.1300 (0.0148)} & \multirow{2}{*}{76.8729} & \multirow{2}{*}{1.82321e-18} \\ 
+X KC, auto KC & & &\\ \hline
+X PC 1-2, auto PC 1-5  & \multirow{2}{*}{0.1318 (0.0149)} & \multirow{2}{*}{78.4084} & \multirow{2}{*}{8.37946e-19} \\ 
+X KC \textcolor{white}{auto KC} & &&\\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5}  & \multirow{2}{*}{0.1301 (0.0148)} & \multirow{2}{*}{77.1621} & \multirow{2}{*}{1.57487e-18} \\ 
+X KC, auto KC & & &\\ \hline 
+X PC 1-2 \textcolor{white}{auto PC 1-5} & \multirow{2}{*}{0.1315 (0.0149)} & \multirow{2}{*}{78.3093} & \multirow{2}{*}{8.81049e-19} \\ 
+X KC \textcolor{white}{auto KC} & & & \\   \hline
+\end{tabular}
+\caption{P-value, effect size and standard error for the X chromosome index SNP in all five models. The SNP is Hg19 position 153,764,217 (Xq28) with a MAF in our sample of 12,489 of 0.01979, C/T (T minor allele) and rsID kgp30626516. This position corresponds to dbSNP rsID 1050828, exactly as previously reported by the COGENT study.}
+\end{table}
+
+
+\subsection*{BMI}
+I performed association tests on the HCHS/SOL genotyping data, examining log(BMI) (\texttt{298888}). 
+In the stratified analysis examining the samples from Central America, there appeared to be a peak of X chromosome SNPs. We hoped to further explore that hit using MLM-X.
+To perform the final association test, I fit five models including or excluding fixed and random effects for X chromosome structure specifically. There were a total of 1,370 samples included (see presentation from trait for exclusion criteria).
+
+To calculate X chromosome PCs to include for the stratified analyses, we first found a pruned set of X chromosome SNPs using all study samples (see subsection above).
+Then, the subest of unrelated.deg4 samples that fall into each gengrp6.strata category were specified as the unrelated samples, and the remaining gengrp6.strata samples were the set to include for the X chromosome PCA. At the end, we have six new sets of X chromosome EVs, the first two of each we will use as fixed effects in the association tests.
+We used exactly the same X chromosome KC as described for the red blood cell traits above.
+
+The estimated proportion variance explained from each of the components included in the five models is displayed in Table~\ref{table:varComp_bmi}. 
+The genome-wide inflation factor, $\lambda$, is presented in Table~\ref{table:lambda_bmi} for all five models.
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{r|ccccc}
+  \hline
+ & autosomal KC & block group & environment & household & X chromosome KC  \\
+  \hline
+autosomal & 0.43880 & 0 & 0.40434 & 0.15686 & \\ \hline
+X PC 1-2, auto PC 1-5&\multirow{2}{*}{0.42959} & \multirow{2}{*}{0} & \multirow{2}{*}{0.42027} & \multirow{2}{*}{0.15014} & \multirow{2}{*}{0 } \\ 
+X KC, auto KC & & \\ \hline
+X PC 1-2, auto PC 1-5 & \multirow{2}{*}{} & \multirow{2}{*}{0} & \multirow{2}{*}{0.78487} & \multirow{2}{*}{0.21513} & \multirow{2}{*}{0} \\
+X KC \textcolor{white}{auto KC} & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5}& \multirow{2}{*}{0.43545} & \multirow{2}{*}{0}& \multirow{2}{*}{0.41583}& \multirow{2}{*}{0.14872}& \multirow{2}{*}{0} \\
+X KC, auto KC & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5} & \multirow{2}{*}{} & \multirow{2}{*}{0} & \multirow{2}{*}{0.78727}& \multirow{2}{*}{0.21273}& \multirow{2}{*}{0}\\
+X KC \textcolor{white}{auto KC} & & \\ \hline 
+\end{tabular}
+\caption{Estimated proportion variance for each of the components.}
+\label{table:varComp_bmi}
+\end{table}
+
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{r|cc}
+  \hline
+ & X chromosome & genome-wide \\ 
+  \hline
+auto PC 1-5 & \multirow{2}{*}{1.045}&\multirow{2}{*}{} \\
+auto KC && \\ \hline
+X PC 1-2, auto PC 1-5&\multirow{2}{*}{1.000} & \multirow{2}{*}{} \\ 
+X KC, auto KC & & \\ \hline
+X PC 1-2, auto PC 1-5 & \multirow{2}{*}{1.032} & \multirow{2}{*}{} \\
+X KC \textcolor{white}{auto KC} & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5}& \multirow{2}{*}{0.9964} & \multirow{2}{*}{} \\
+X KC, auto KC & & \\ \hline
+X PC 1-2 \textcolor{white}{auto PC 1-5} & \multirow{2}{*}{1.035} & \multirow{2}{*}{} \\
+X KC \textcolor{white}{auto KC} & & \\ \hline 
+\end{tabular}
+\caption{The $\lambda$ genomic inflation factor calculated from association testing on the X chromosome, using observed SNPs and filtering using the composite filter and MAC$>$30, MAF$>0.0111$ for a total of 34,424 SNPs. The same filters were used for the genome-wide set of SNPs for a total of 2,128,491 SNPs across the autosomes and X chromosome.}
+\label{table:lambda_bmi}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rr|lllllll}
+  \hline
+ &bkgrd & CentralAm & SouthAm & Mexican & Cuban & Other/Unk & PR & Dominican \\ 
+  &n & 1094 &  686 & 3635 & 1732 &  326 & 1703 &  897 \\ \hline
+\parbox[t]{2mm}{\multirow{3}{*}{\rotatebox[origin=c]{90}{CAnD}}}&  America &  1.049e-64 &  3.850e-45 & 1.094e-225 &  1.043e-53 &  4.593e-14 &  4.457e-97 &  1.868e-18 \\ 
+&  Europe&  4.883e-70 &  1.064e-48 & 2.425e-236 &  1.563e-77 &  4.086e-21 &  6.413e-77 &  6.178e-46 \\ 
+ & Africa & 5.489e-01 & 8.646e-01 & 3.590e-01 & 1.705e-24 & 1.653e-05 & 5.224e-03 & 9.273e-23 \\  \hline
+\parbox[t]{2mm}{\multirow{3}{*}{\rotatebox[origin=c]{90}{t-test}}}& America &  1.910e-28 &  2.787e-13 & 2.605e-100 &  4.076e-35 &  3.104e-04 &  1.041e-80 &  2.3653e-14 \\ 
+  &Europe &  3.381e-35 &  3.758e-16 & 5.741e-111 &  2.106e-25 &  5.660e-07 &  7.665e-47 &  1.583e-24 \\ 
+  &Africa & 7.311e-01 & 9.305e-01 & 4.282e-01 & 8.762e-07 & 5.877e-02 & 5.956e-02 & 1.747e-10 \\ 
+   \hline
+\end{tabular}
+\caption{Results from applying the CAnD test to the HCHS/SOL subjects, stratified by self-identified background.}
+\end{table}
 
 
 \end{document}
