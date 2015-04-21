@@ -63,6 +63,12 @@
 # 50. CAnD on autosomes using local ancestry estimates
 # 51. Summaries for CAnD; non param CAnD
 
+# 52. New PO kc estimates, auto vs x chr
+# 53. Recalculate lambda on X chr excl Xq28 region
+# 54. Redo plots with local ancestry estimates
+# 55. Perform CAnD and nonP CAnD and pooled t-test on local ancestry estimates
+# 56. Parse CAnD results
+# 57. Look at PR chr 2 results in depth
 
 
 #####
@@ -853,6 +859,19 @@ plotCol[scan$race.cat=="Cuban"] <- "blue"
 plotCol[scan$race.cat=="Dominican"] <- "burlywood"
 parcoord(pc$vectors[,1:10],col=plotCol)
 dev.off()
+
+png("olga_application/pca_autoX_parCoords.png",width=960)
+plotCol <- rep("black",nrow(scan))
+plotCol[scan$race.cat=="SouthAmerican"] <- "magenta"
+plotCol[scan$race.cat=="Mexican"] <- "goldenrod"
+plotCol[scan$race.cat=="CentralAmerican"] <- "red"
+plotCol[scan$race.cat=="PuertoRican"] <- "green"
+plotCol[scan$race.cat=="Cuban"] <- "blue"
+plotCol[scan$race.cat=="Dominican"] <- "burlywood"
+parcoord(pc$vectors[,1:10],col=plotCol)
+dev.off()
+
+
 
 rm(list=ls())
 
@@ -2610,6 +2629,18 @@ legend("topright",c("Auto PC 1-5 Adj","Auto+X PC 1-5 Adj","X Chr PC 1-2 Adj","No
        lty=1,lwd=5,cex=1.5)
 dev.off()
 
+
+pdf("olga_application/hist_allXPrunedKC_justautoXadj.pdf")
+hist(toHist$kin,col=rgb(1,0,0,0.5),breaks=50,cex.lab=1.5,
+     main="X chr KC for 10,261 Unrelated Samples",xlab="X Chr KC",cex.main=1.5)
+dev.off()
+pdf("olga_application/hist_allXPrunedKC_justautoXadj_trunc.pdf")
+hist(toHist$kin,col=rgb(1,0,0,0.5),breaks=50,cex.lab=1.5,ylim=c(0,1e5),
+     main="X chr KC for 10,261 Unrelated Samples",xlab="X Chr KC",cex.main=1.5)
+dev.off()
+
+
+
 pdf("olga_application/hist_allXPrunedKC.pdf",height=14,width=14)
 par(mfrow=c(2,2))
 hist(toHistAutoAdj$kin,main="",col=rgb(1,1,0,0.5),breaks=50,xlab="X Chr KC",cex.lab=1.5,xlim=c(-0.2,0.7))
@@ -2734,7 +2765,7 @@ points(kcPO_xAdj$kin[kcPO_xAdj$sex.1=="M"&kcPO_xAdj$sex.2=="F"],
        kcPO_xAdj$kinship[kcPO_xAdj$sex.1=="M"&kcPO_xAdj$sex.2=="F"],col=rgb(0,0,1,0.5),pch=19)
 points(kcPO_xAdj$kin[kcPO_xAdj$sex.1=="F"&kcPO_xAdj$sex.2=="M"],
        kcPO_xAdj$kinship[kcPO_xAdj$sex.1=="F"&kcPO_xAdj$sex.2=="M"],col=rgb(0,0,1,0.5),pch=19)
-legend("bottomright",c("M-M pairs","F-M pairs","F-F pairs"),col=c(rgb(0,1,0,0.5),rgb(0,0,1,0.5),rgb(1,0,0,0.5)),
+legend("bottomright",c("M-M pairs","F-F pairs","F-M pairs"),col=c(rgb(0,1,0,1),rgb(1,0,0,1),rgb(0,0,1,1)),
        pch=19,cex=1.3)
 abline(v=0,col="gray"); abline(v=0.25,col="gray"); abline(v=0.5,col="gray")
 dev.off()
@@ -5338,8 +5369,1071 @@ gdsobj <- openfn.gds(gdsfn)
 
 # need to get the mean values across chromosomes
 # figure out how to loop through and take means for each ancestry, by chr
+chrs <- read.gdsn(index.gdsn(gdsobj, "snp.chromosome"))
+length(chrs) # 14192
+(t <- table(chrs))
+#   1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16 
+#1116 1072  939  874  846  811  760  688  661  720  665  709  520  479  484  514 
+# 17   18   19   20   21   22 
+#506  488  402  438  245  255 
+stInd <- cumsum(t)
 
+# ok, so the ancestry estimates are matrices of sample x snp
+# store the mean ancestry by chromosome per sample, so need a matrix of results sample x chr*3
+ancest <- data.frame(matrix(NA,nrow=12803,ncol=(22*3+1)))
+colnames(ancest) <- c("scanID",paste0(rep(c("eur","afr","amer"),each=22),1:22))
+
+ancest$scanID <- read.gdsn(index.gdsn(gdsobj,"sample.id"))
+
+for(i in 1:22){
+  if(i==1){st <- 1} else{st <- stInd[i-1]+1}
+  stopifnot(all(chrs[st:(t[i]+st-1)]==i))
+  tmpEur <- read.gdsn(index.gdsn(gdsobj,"dosage_eur"),start=c(1,st),count=c(-1,t[i]))
+  # want row sums, divided by 2*ncol
+  colnm <- paste0("eur",i)
+  ancest[,colnm] <- rowSums(tmpEur)/(2*ncol(tmpEur))
+  
+  tmpAfr <- read.gdsn(index.gdsn(gdsobj,"dosage_afr"),start=c(1,st),count=c(-1,t[i]))
+  colnm <- paste0("afr",i)
+  ancest[,colnm] <- rowSums(tmpAfr)/(2*ncol(tmpAfr))
+  
+  tmpNam <- read.gdsn(index.gdsn(gdsobj,"dosage_amer"),start=c(1,st),count=c(-1,t[i]))
+  colnm <- paste0("amer",i)
+  ancest[,colnm] <- rowSums(tmpNam)/(2*ncol(tmpNam)) 
+}
+
+# check that each ancestry sums to 1
+colseq <- seq(from=2,to=ncol(ancest),by=22)
+for(i in 1:22){
+  stopifnot(sum(ancest[,(colseq+i-1)])==12803)
+} # ok, looks good!
+
+# save this and run the rest locally
+save(ancest,file="local_ancestry_byChr.RData")
+
+##
+# now we can do CAnD on the local ancestry proportions
+# want to stratify by background group
+
+install.packages("~/Documents/CAnD_package/CAnD_0.99.0.tar.gz", repos = NULL, type = "source")
+library(CAnD)
+library(GWASTools)
+
+# compare with the set of samples from admixture plots on the server
+oldRes <- getobj("admix_xchr_aftermerge.RData")
+res <- getobj("olga_admixture_results.RData")
+
+sum(is.element(oldRes$scanID,res$scanID)) # 10642
+sum(!is.element(res$scanID,oldRes$scanID)) # 84
+
+res <- merge(res,oldRes,by="scanID",all.y=TRUE)
+
+res <- res[res$pop=="-",]
+res <- res[res$unrelated.pcair.deg4,]
+dim(res) # 10073 78
+
+# first do by all samples together
+afrCols <- seq(from=6,to=73,by=3)
+colnames(res)[afrCols]
+afr <- CAnD(res[,afrCols])
+colnames(res)[afrCols-1]
+eur <- CAnD(res[,(afrCols-1)])
+colnames(res)[afrCols+1]
+nam <- CAnD(res[,(afrCols+1)])
+
+res$AFR.auto <- rowMeans(res[,afrCols[2:23]])
+res$EUR.auto <- rowMeans(res[,(afrCols-1)[2:23]])
+res$NAM.auto <- rowMeans(res[,(afrCols+1)[2:23]])
+
+t.test(res$AFR.x,res$AFR.auto)$p.value # 3.369035e-08
+t.test(res$AFR.x,res$AFR.auto,paired=TRUE)$p.value # 7.641825e-33
+
+t.test(res$EUR.x,res$EUR.auto)$p.value # 1.644846e-169
+t.test(res$EUR.x,res$EUR.auto,paired=TRUE)$p.value # 0
+
+t.test(res$NAM.x,res$NAM.auto)$p.value # 5.53147e-98
+t.test(res$NAM.x,res$NAM.auto,paired=TRUE)$p.value # 0
+
+plotPvals(nam,title="Native American CAnD Results")
+# wow, just way off the charts
+
+# do CAnD but excl x chr
+afrA <- CAnD(res[,(afrCols)[2:23]])
+colnames(res)[(afrCols-1)[2:23]]
+eurA <- CAnD(res[,(afrCols-1)[2:23]])
+colnames(res)[(afrCols+1)[2:23]]
+namA <- CAnD(res[,(afrCols+1)[2:23]])
+
+# now stratify by bkgrd value
+table(res$bkgrd)
+#CentralAmerican           Cuban       Dominican         Mexican           Other     PuertoRican 
+#           1094            1732             897            3635             306            1703 
+#SouthAmerican         Unknown 
+#          686              20 
+
+eurCols <- afrCols-1
+namCols <- afrCols+1
+
+res$bkgrd[res$bkgrd=="Unknown"] <- "Other/Unknown"
+res$bkgrd[res$bkgrd=="Other"] <- "Other/Unknown"
+
+subgrpRes <- data.frame("bkgrd"=unique(res$bkgrd),"n"=NA)
+newCols <- data.frame(matrix(NA,nrow=nrow(subgrpRes),ncol=23*3))
+colnames(newCols) <- paste0(paste0("chr",c(23,1:22)),rep(c(".NAM",".EUR",".AFR"),each=23))
+subgrpRes <- cbind(subgrpRes,newCols)
+colnames(subgrpRes)
+
+for(i in 1:nrow(subgrpRes)){
+  pop <- subgrpRes$bkgrd[i]
+  subgrpRes$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  subgrpRes[i,3] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))[1]
+  subgrpRes[i,4:25] <- pValues(CAnD(res[res$bkgrd==pop,namCols[2:23]]))
+  
+  subgrpRes[i,26] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))[1]
+  subgrpRes[i,27:48] <- pValues(CAnD(res[res$bkgrd==pop,eurCols[2:23]]))
+  
+  subgrpRes[i,49] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))[1]
+  subgrpRes[i,50:71] <- pValues(CAnD(res[res$bkgrd==pop,afrCols[2:23]]))  
+}
+# so the x chr is x vs autosomes, each autosome is that chr vs all other autosomes
+
+# plot these results
+# facet wrap for each ancestral subpop
+# on the x axis have each chromosome
+# on the y axis the -log10(pvalue), where the plotting colors are by bkgrd group, so 6 points per x-axis value
+
+melted <- melt(subgrpRes,id.vars=c("bkgrd","n"))
+melted$Ancestry <- substr(melted$variable,start=regexpr("\\.",melted$variable)+1,stop=nchar(as.character(melted$variable)))
+melted$Chromosome <- substr(melted$variable,start=regexpr("chr",melted$variable)+3,stop=regexpr("\\.",melted$variable)-1)
+
+#melted$Chromosome[melted$Chromosome==23] <- "X"
+melted$Ancestry[melted$Ancestry=="NAM"] <- "America"
+melted$Ancestry[melted$Ancestry=="EUR"] <- "Europe"
+melted$Ancestry[melted$Ancestry=="AFR"] <- "Africa"
+
+melted$bkgrd <- paste0(melted$bkgrd,"\nn=",melted$n)
+cols.all <- setNames(c("red","green","gold","blue","gray","magenta","brown"),unique(melted$bkgrd))
+
+melted$pch <- 1
+melted$pch[-log10(melted$value)>30] <- 2
+melted$value[-log10(melted$value)>30] <- 1e-29
+
+ggplot(melted,aes(x=as.integer(Chromosome),y=-log10(value),fill=bkgrd)) +geom_point(aes(color=bkgrd,shape=factor(pch)))+
+  facet_wrap(~Ancestry,nrow=3)+xlab("Chromosome")+theme_bw()+coord_cartesian(ylim=c(-1,30))+
+  geom_hline(yintercept=1.30,size=0.7,color="gray")+scale_color_manual(values=cols.all)
+ggsave("CAnD_solResults.pdf", width=11, height=8)
+
+rm(list=ls())
 
 
 #####
 # 51. Summaries for CAnD; non param CAnD
+
+
+#####
+# 52. New PO kc estimates, auto vs x chr
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan))
+
+kcX_xAdj <- get(load("olga_application/pcRelate_prunedXchr_xPC12adj.RData"))
+kcX_xAdj <- kcX_xAdj$kinship
+
+obsRel <- get(load("pcrelate_PO_estimates.RData"))
+head(obsRel)
+
+poIds1 <- obsRel$ID1
+poIds2 <- obsRel$ID2
+obsRel$ID12 <- paste(obsRel$ID1,obsRel$ID2)
+
+kcPO_xAdj <- kcX_xAdj[is.element(kcX_xAdj$ID1,poIds1),]
+obsPOids <- paste(kcPO_xAdj$ID1,kcPO_xAdj$ID2)
+kcPO_xAdj <- kcPO_xAdj[is.element(obsPOids,paste(poIds1,poIds2)),]
+dim(kcPO_xAdj) # 1442 4
+kcPO_xAdj$ID12 <- paste(kcPO_xAdj$ID1,kcPO_xAdj$ID2)
+
+kcPO_xAdj <- merge(kcPO_xAdj,obsRel,by="ID12",all.x=TRUE,suffixes=c(".x",".auto"))
+# need to merge in sex, too
+kcPO_xAdj <- merge(kcPO_xAdj,pData(scan)[,c("scanID","sex")],by.x="ID1.x",by.y="scanID")
+kcPO_xAdj <- merge(kcPO_xAdj,pData(scan)[,c("scanID","sex")],by.x="ID2.x",by.y="scanID",suffixes=c(".1",".2"))
+
+pdf("olga_application/kc_xPrunedvsAuto_poPairs_xAdj.pdf")
+plot(kcPO_xAdj$kin.x,kcPO_xAdj$kin.auto,type="n",xlab="X Chr KC",ylab="Auto KC",
+     main="Auto vs X Chr KC for 1,442 PO pairs",cex.lab=1.5,cex.axis=1.5,cex.main=1.5)
+points(kcPO_xAdj$kin.x[kcPO_xAdj$sex.1=="M"&kcPO_xAdj$sex.2=="M"],
+       kcPO_xAdj$kin.auto[kcPO_xAdj$sex.1=="M"&kcPO_xAdj$sex.2=="M"],col=rgb(0,1,0,0.5),pch=19)
+points(kcPO_xAdj$kin.x[kcPO_xAdj$sex.1=="F"&kcPO_xAdj$sex.2=="F"],
+       kcPO_xAdj$kin.auto[kcPO_xAdj$sex.1=="F"&kcPO_xAdj$sex.2=="F"],col=rgb(1,0,0,0.5),pch=19)
+points(kcPO_xAdj$kin.x[kcPO_xAdj$sex.1=="M"&kcPO_xAdj$sex.2=="F"],
+       kcPO_xAdj$kin.auto[kcPO_xAdj$sex.1=="M"&kcPO_xAdj$sex.2=="F"],col=rgb(0,0,1,0.5),pch=19)
+points(kcPO_xAdj$kin.x[kcPO_xAdj$sex.1=="F"&kcPO_xAdj$sex.2=="M"],
+       kcPO_xAdj$kin.auto[kcPO_xAdj$sex.1=="F"&kcPO_xAdj$sex.2=="M"],col=rgb(0,0,1,0.5),pch=19)
+abline(v=0,col="gray"); abline(v=0.25,col="gray"); abline(v=0.5,col="gray")
+legend("topleft",c("M-M pairs","F-F pairs","F-M pairs"),col=c(rgb(0,1,0,1),rgb(1,0,0,1),rgb(0,0,1,1)),
+       pch=19,cex=1.3,bg="white")
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 53. Recalculate lambda on X chr excl Xq28 region
+
+library(QCpipeline)
+library(GWASTools)
+source("CAnD_pooled.R")
+
+setwd("/projects/geneva/geneva_sata/caitlin/olga_xchr_assoc/Assoc/")
+
+# read in xchr results, the autosomal model
+assoc <- getobj("assoc_auto_316987_chr23.RData")
+(mac.thresh <- 30)
+filt.imp <- which(assoc$type %in% 0)
+if (!("composite.filter" %in% names(assoc))) assoc$composite.filter <- TRUE
+assoc$maf.filt <- assoc$effN > mac.thresh
+n <- max(assoc$n, na.rm=T)
+n # 12489
+
+maf.eff <- format(quadSolveMAF(mac.thresh, n), digits=3)
+filt.obs <- which(assoc$type %in% c(2,3))
+
+filt.obs.maf <- intersect(filt.obs, which(assoc$maf.filt))
+title.obs.maf <- paste("obs + composite.filter + MAC >", mac.thresh, "\n", prettyNum(length(filt.obs.maf), big.mark=","), "SNPs - MAF >", maf.eff) 
+# this is the filter i want
+
+assoc <- assoc[filt.obs.maf,]
+
+stat = assoc[,"Stat"]
+stat <- pmax(stat, 0)
+
+(lambda <- calculateLambda(stat, df=1)) # 1.115727, as expected
+
+# figure out what position we should truncate the markers at
+# take off the last 1e7 bpairs
+maxPos <- max(assoc$position)-1e7
+assocSm <- assoc[assoc$position<maxPos,]
+stat <- assocSm[["Stat"]]
+stat <- pmax(stat,0)
+length(stat) # 41718
+(lambda <- calculateLambda(stat,df=1)) # 1.104407
+
+##
+# do the same exercise for the other assoc test results
+assoc <- getobj("assoc_316987_chr23.RData")
+(mac.thresh <- 30)
+filt.imp <- which(assoc$type %in% 0)
+if (!("composite.filter" %in% names(assoc))) assoc$composite.filter <- TRUE
+assoc$maf.filt <- assoc$effN > mac.thresh
+assoc$maf2.filt <- assoc$effN > 2*mac.thresh
+n <- max(assoc$n, na.rm=T)
+n # 12489
+
+maf.eff <- format(quadSolveMAF(mac.thresh, n), digits=3)
+
+filt.obs.maf <- intersect(filt.obs, which(assoc$maf.filt))
+title.obs.maf <- paste("obs + composite.filter + MAC >", mac.thresh, "\n", prettyNum(length(filt.obs.maf), big.mark=","), "SNPs - MAF >", maf.eff) 
+# this is the filter i want
+
+assoc <- assoc[filt.obs.maf,]
+
+stat = assoc[,"Stat"]
+stat <- pmax(stat, 0)
+
+(lambda <- calculateLambda(stat, df=1)) # 1.04343
+
+# figure out what position we should truncate the markers at
+# take off the last 1e7 bpairs
+maxPos <- max(assoc$position)-1e7
+assocSm <- assoc[assoc$position<maxPos,]
+stat <- assocSm[,"Stat"]
+stat <- pmax(stat,0)
+length(stat) # 41718
+(lambda <- calculateLambda(stat,df=1)) # 1.035676
+
+assoc <-  getobj("assoc_316987_chr23.RData")
+length(assoc$pval)
+
+assoc$maf.filt <- assoc$effN > mac.thresh
+qual.filt <- which(assoc > 0.8)
+mafhi.filt <- intersect(qual.filt, which(assoc$maf.filt))
+length(mafhi.filt) # 669969, just as we need!
+
+pos.filt <- which(assoc$position<maxPos)
+
+mafhi.pos.filt <- intersect(mafhi.filt,pos.filt)
+length(mafhi.pos.filt) # 626933
+
+# make a plot of these
+outfile <- paste("../Plots/pval_manh_single__exclXq28_316987",".png", sep="")
+     png(outfile, width=1080, height=380)
+mtxt <- "assoc~evx1+evx2"
+     par(mar=c(5,5,4,3)+0.1, lwd=1.5, cex.lab=1.5, cex.main=1.5, cex.sub=1.5, 
+         oma=c(0,0,length(mtxt)+0.1,0))
+     manhattanPlot(assoc[,"pval"][mafhi.pos.filt], assoc$chromosome[mafhi.pos.filt], 
+                   main="all + composite.filter + MAC*oevar > 30\n626,933 SNPs - MAF > 0.0012")
+     #mtext(side=3, line=-1, text=groupTitle, padj=0.9, adj=0.02, outer=T, cex=1.5)
+     #title(mtxt, outer=T)
+     dev.off()
+
+rm(list=ls())
+
+
+#####
+# 54. Redo plots with local ancestry estimates
+
+library(GWASTools)
+
+res <- getobj("local_ancestry_byChr.RData")
+scan <- getobj("admix_xchr_aftermerge.RData")
+colnames(scan)[3:5] <- c("AFR.x","NAM.x","EUR.x")               
+# merge in admixture results for x chr since don't have local ancestry estimates
+res <- merge(res,scan,by="scanID")
+
+# get avg local ancestry across the autosomes
+colnames(res)
+afrCols <- 24:45
+colnames(res)[afrCols]
+res$AFR.auto <- rowMeans(res[,afrCols])
+
+eurCols <- 2:23
+colnames(res)[eurCols]
+res$EUR.auto <- rowMeans(res[,eurCols])
+
+namCols <- 46:67
+colnames(res)[namCols]
+res$NAM.auto <- rowMeans(res[,namCols])
+
+# plot the local ancestry estimates averaged across autosomes in barplot form
+# want res$AFR.auto,EUR.auto,NAM.auto for each bkgrd
+factorWithCount <- function(x,levels){
+  n <- sapply(levels, function(l) sum(x == l, na.rm=TRUE))
+  factor(x, levels=levels, labels=paste(levels, n, sep="\nn="))
+}
+pops <- c("Cuban", "Dominican", "PuertoRican", "Mexican", "CentralAmerican", "SouthAmerican", "Other/Unknown")
+res$bkgrd[is.element(res$bkgrd,c("Unknown","Other"))] <- "Other/Unknown"
+res$bkgrd <- factorWithCount(res$bkgrd, levels=pops)
+
+res$n <- 1:nrow(res)
+res$EUR.diff <- res$EUR.x-res$EUR.auto
+res$AFR.diff <- res$AFR.x-res$AFR.auto
+res$NAM.diff <- res$NAM.x-res$NAM.auto
+
+resSm <- res[,c("scanID","bkgrd","n","AFR.auto","NAM.auto","EUR.auto")]
+colnames(resSm)[4:6] <- c("Africa","America","Europe")
+resSm$genome <- "Autosomal"
+resSm <- resSm[order(resSm$bkgrd, resSm$Europe, resSm$America,resSm$Africa),]
+resSm$n <- 1:nrow(resSm)
+
+toAd <- res[,c("scanID","bkgrd","n","AFR.x","NAM.x","EUR.x")]
+toAd$genome <- "X"
+colnames(toAd)[4:6] <- c("Africa","America","Europe")
+toAd <- toAd[order(toAd$bkgrd,toAd$Europe,toAd$America,toAd$Africa),]
+toAd$n <- 1:nrow(toAd)
+resSm <- rbind(resSm,toAd)
+
+melted <- melt(resSm, id.vars=c("n", "scanID", "bkgrd","genome"))
+
+library(RColorBrewer); library(grid)
+DARK2 <- setNames(brewer.pal(8, "Dark2"),
+                  c("teal", "orange", "purple", "pink", "green", "gold", "brown", "gray"))
+levels <- c("Africa", "America", "Europe")
+cols <- setNames(DARK2[c("purple", "orange", "teal")], levels)
+colnames(melted)[6] <- "Proportion"
+
+png("localAncest_auto_X_barplot.png",width=960)
+ggplot(melted, aes(x=n, y=Proportion, fill=variable, color=variable)) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(values=cols, breaks=rev(names(cols))) +
+  scale_color_manual(values=cols, breaks=rev(names(cols))) + 
+  facet_grid(genome~bkgrd, scales="free_x") +
+  theme_bw() + 
+  theme(axis.line=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        panel.margin=unit(0, "in"))
+dev.off()
+
+## make boxplots now
+cols.all <- c(setNames(paste0(cols, "55"), paste0(names(cols),".X")),
+              setNames(cols, paste0(names(cols),".Autosomal")))
+cols.all <- cols.all[c(4,1,5,2,6,3)]
+
+melted$Ancestry.Type <- paste(melted$variable,melted$genome,sep=".")
+pdf("localAncest_boxplot_auto_x_woutPvals.pdf",width=11,height=9)
+ggplot(melted, aes(x=bkgrd, y=Proportion, fill=Ancestry.Type)) + geom_boxplot() +
+  scale_fill_manual(values=cols.all, breaks=names(cols.all)) +
+  facet_wrap(~variable, ncol=1) + 
+  ylab("Fraction of continental ancestry") + xlab("Self-identified background") +
+  #geom_text(data=pvalPlot, aes(x=bkgrd, y=y, label=value), size=4) +
+  theme(axis.text.x=element_text(colour="black",size=12),
+        axis.text.y=element_text(size=13)) + theme_bw()
+dev.off()
+
+# make a boxplot of the differences, add a line at y=0
+resSm <- res[,c("scanID","bkgrd","n","AFR.diff","NAM.diff","EUR.diff")]
+colnames(resSm)[4:6] <- c("Africa","America","Europe")
+resSm <- resSm[order(resSm$bkgrd, resSm$Europe, resSm$America,resSm$Africa),]
+resSm$n <- 1:nrow(resSm)
+
+melted <- melt(resSm, id.vars=c("n", "scanID", "bkgrd"))
+
+pdf("localAncest_boxplot_auto_x_Diff.pdf",width=11,height=9)
+ggplot(melted, aes(x=bkgrd, y=value, fill=variable)) + geom_boxplot() +
+  scale_fill_manual(values=cols, breaks=names(cols)) +
+  facet_wrap(~variable, ncol=1) + 
+  ylab("X Chr - Autosomal Average Local Ancestry") + xlab("Self-identified background") +
+  #geom_text(data=pvalPlot, aes(x=bkgrd, y=y, label=value), size=4) +
+  theme(axis.text.x=element_text(colour="black",size=12),
+        axis.text.y=element_text(size=13)) + theme_bw() + 
+  geom_hline(yintercept=0,linetype=2,color="gray")
+dev.off()
+
+# make boxplots of the avg local ancestry, by chr
+library(ggplot2); library(reshape); library(RColorBrewer)
+res <- melt(res,c("scanID","bkgrd"))
+res$Ancestry <- NA
+res$Ancestry[grep("amer",res$variable)] <- "America"
+res$Ancestry[grep("eur",res$variable)] <- "Europe"
+res$Ancestry[grep("afr",res$variable)] <- "Africa"
+res$Ancestry[grep("AFR",res$variable)] <- "Africa"
+res$Ancestry[grep("EUR",res$variable)] <- "Europe"
+res$Ancestry[grep("NAM",res$variable)] <- "America"
+
+SET1 <- setNames(brewer.pal(9, "Set1"),
+                 c("red", "blue", "green", "purple", "orange", "yellow", "brown", "pink", "gray"))
+
+res$bkgrd <- factor(res$bkgrd)
+
+res$bg <- substr(res$bkgrd,start=1,stop=(regexpr("\n",res$bkgrd)-2))
+res$bg[res$bg=="CentralAmerica"] <- "CAm"
+res$bg[res$bg=="SouthAmerica"] <- "SAm"
+res$bg[res$bg=="PuertoRica"] <- "PR"
+res$bg[res$bg=="Other/Unknow"] <- "Unk"
+res$bg[res$bg=="Dominica"] <- "Dom"
+res$bg[res$bg=="Mexica"] <- "Mex"
+
+res$chr <- NA
+res$chr <- gsub("eur","",res$variable)
+res$chr <- gsub("amer","",res$chr)
+res$chr <- gsub("afr","",res$chr)
+res$chr <- gsub("AFR.","",res$chr)
+res$chr <- gsub("NAM.","",res$chr)
+res$chr <- gsub("EUR.","",res$chr)
+
+res <- res[!is.element(res$chr,c("auto","diff","n")),]
+
+res$chr[res$chr=="x"] <- 23
+
+levels <- c(1:23)
+col <- setNames(c(SET1[c("green", "orange", "purple", "red", "yellow", "blue", "gray")],
+                  SET1[c("green", "orange", "purple", "red", "yellow", "blue", "gray")],
+                  SET1[c("green", "orange", "purple", "red", "yellow", "blue", "gray")],
+                  SET1[c("green", "orange")]), levels)
+
+resPl <- res[res$bg=="CAm",]
+pdf("localAncest_CAm_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=value)) + geom_boxplot(aes(color=chr))+
+  facet_wrap(~Ancestry,ncol=1)+theme_bw()+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  ylab("Fraction of Average Local Ancestry") +
+  ggtitle("Self-Identified Central Americans, n=1163")
+dev.off()
+
+resPl <- res[res$bg=="SAm",]
+pdf("localAncest_SAm_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=value)) + geom_boxplot(aes(color=chr))+
+  facet_wrap(~Ancestry,ncol=1)+theme_bw()+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  ylab("Fraction of Average Local Ancestry") +
+  ggtitle("Self-Identified South Americans, n=710")
+dev.off()
+
+resPl <- res[res$bg=="Cuba",]
+pdf("localAncest_Cuba_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=value)) + geom_boxplot(aes(color=chr))+
+  facet_wrap(~Ancestry,ncol=1)+theme_bw()+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  ylab("Fraction of Average Local Ancestry") +
+  ggtitle("Self-Identified Cubans, n=1779")
+dev.off()
+
+resPl <- res[res$bg=="Dom",]
+pdf("localAncest_Dom_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=value)) + geom_boxplot(aes(color=chr))+
+  facet_wrap(~Ancestry,ncol=1)+theme_bw()+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  ylab("Fraction of Average Local Ancestry") +
+  ggtitle("Self-Identified Dominicans, n=968")
+dev.off()
+
+resPl <- res[res$bg=="Mex",]
+pdf("localAncest_Mex_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=value)) + geom_boxplot(aes(color=chr))+
+  facet_wrap(~Ancestry,ncol=1)+theme_bw()+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  ylab("Fraction of Average Local Ancestry") +
+  ggtitle("Self-Identified Mexicans, n=3845")
+dev.off()
+
+resPl <- res[res$bg=="PR",]
+pdf("localAncest_PR_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=value)) + geom_boxplot(aes(color=chr))+
+  facet_wrap(~Ancestry,ncol=1)+theme_bw()+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  ylab("Fraction of Average Local Ancestry") +
+  ggtitle("Self-Identified Puerto Ricans, n=1832")
+dev.off()
+
+resPl <- res[res$bg=="Unk",]
+pdf("localAncest_Unk_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=value)) + geom_boxplot(aes(color=chr))+
+  facet_wrap(~Ancestry,ncol=1)+theme_bw()+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  ylab("Fraction of Average Local Ancestry") +
+  ggtitle("Self-Identified Other/Unknown, n=345")
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 55. Perform CAnD and nonP CAnD and pooled t-test on local ancestry estimates
+
+install.packages("~/Documents/CAnD_package/CAnD_0.99.4.tar.gz", repos = NULL, type = "source")
+library(CAnD)
+library(GWASTools)
+source("CAnD_pooled.R")
+
+res <- getobj("local_ancestry_byChr.RData")
+scan <- getobj("admix_xchr_aftermerge.RData")
+colnames(scan)[3:5] <- c("AFR.x","NAM.x","EUR.x")               
+# merge in admixture results for x chr since don't have local ancestry estimates
+res <- merge(res,scan,by="scanID")
+
+res$bkgrd[is.element(res$bkgrd,c("Other","Unknown"))] <- "Other/Unknown"
+
+## need to subset so that only unrel samples are included
+unrel <- getobj("unrelated_pcair_deg4.RData")
+
+sum(is.element(res$scanID,unrel))
+sum(!is.element(res$scanID,unrel))
+
+res <- res[is.element(res$scanID,unrel),]
+
+# get avg local ancestry across the autosomes
+colnames(res)
+afrCols <- 24:45
+colnames(res)[afrCols]
+res$AFR.auto <- rowMeans(res[,afrCols])
+
+eurCols <- 2:23
+colnames(res)[eurCols]
+res$EUR.auto <- rowMeans(res[,eurCols])
+
+namCols <- 46:67
+colnames(res)[namCols]
+res$NAM.auto <- rowMeans(res[,namCols])
+
+
+## get CAnD and nonParam CAnD pvalues, also pooled t-test pvalues
+# make a table of the results
+subgrpRes <- data.frame("bkgrd"=unique(res$bkgrd),"n"=NA)
+newCols <- data.frame(matrix(NA,nrow=nrow(subgrpRes),ncol=23*3))
+colnames(newCols) <- paste0(paste0("chr",c(23,1:22)),rep(c(".NAM",".EUR",".AFR"),each=23))
+subgrpRes <- cbind(subgrpRes,newCols)
+colnames(subgrpRes)
+
+namCols <- c(70,46:67)
+eurCols <- c(71,2:23)
+afrCols <- c(69,24:45)
+
+namAt <- c(70,74)
+eurAt <- c(71,73)
+afrAt <- c(69,72)
+
+colnames(res)[namCols]; colnames(res)[eurCols]; colnames(res)[afrCols]
+nonPres <- subgrpRes
+pooledres <- subgrpRes
+
+nonParam_diff <- function(tmp){
+  diff_means=tmp[,1]-tmp[,2]
+  m=sum(diff_means>0)
+  n=nrow(tmp)
+  #ifelse(pbinom(m,n,0.5)<0.5,2*pbinom(m,n,0.5),2*(1-pbinom(m,n,0.5)+dbinom(m,n,0.5)))
+  binom.test(m,n)$p.value
+}
+
+param_diff <- function(tmp){
+  t.test(tmp[,1],tmp[,2],paired=TRUE)$p.value
+}
+
+pooled_diff <- function(tmp){
+  t.test(tmp[,1],tmp[,2],paired=FALSE)$p.value
+}
+
+for(i in 1:nrow(subgrpRes)){
+  pop <- subgrpRes$bkgrd[i]
+  subgrpRes$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #subgrpRes[i,3] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))[1]
+  subgrpRes[i,3:25] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))
+  subgrpRes[i,3] <- param_diff(res[res$bkgrd==pop,namAt])
+  
+  #subgrpRes[i,26] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))[1]
+  subgrpRes[i,26:48] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))
+  subgrpRes[i,26] <- param_diff(res[res$bkgrd==pop,eurAt])
+  
+  #subgrpRes[i,49] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))[1]
+  subgrpRes[i,49:71] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))  
+  subgrpRes[i,49] <- param_diff(res[res$bkgrd==pop,afrAt])
+  
+  #
+  nonPres$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #nonPres[i,3] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,namCols]))[1]
+  nonPres[i,3:25] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,namCols]))
+  nonPres[i,3] <- nonParam_diff(res[res$bkgrd==pop,namAt])
+  
+  #nonPres[i,26] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,eurCols]))[1]
+  nonPres[i,26:48] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,eurCols]))
+  nonPres[i,26] <- nonParam_diff(res[res$bkgrd==pop,eurAt])
+  
+  #nonPres[i,49] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,afrCols]))[1]
+  nonPres[i,49:71] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,afrCols]))  
+  nonPres[i,49] <- nonParam_diff(res[res$bkgrd==pop,afrAt])
+  
+  #
+  pooledres$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #pooledres[i,3] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))[1]
+  pooledres[i,3:25] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))
+  pooledres[i,3] <- pooled_diff(res[res$bkgrd==pop,namAt])
+  
+  #pooledres[i,26] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))[1]
+  pooledres[i,26:48] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))
+  pooledres[i,26] <- pooled_diff(res[res$bkgrd==pop,eurAt])
+  
+  #pooledres[i,49] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))[1]
+  pooledres[i,49:71] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))  
+  pooledres[i,49] <- pooled_diff(res[res$bkgrd==pop,afrAt])
+}
+
+
+
+# x vs autos isn't bonf corrected
+# autos is just autos vs other autos, IS bonf corrected
+
+cbind(subgrpRes[,c(3,26,49)],nonPres[,c(3,26,49)],pooledres[,c(3,26,49)])
+cand_results <- list("CAnD_pvalue"=subgrpRes,"CAnD_nonP"=nonPres,"Pooled_t"=pooledres)
+save(cand_results,file="cand_results_inclX_bonfCorr.RData")
+
+# can run a sens analysis where the autosomes are simply looked at against the autosomes, ie excl the x
+subgrpRes <- data.frame("bkgrd"=unique(res$bkgrd),"n"=NA)
+newCols <- data.frame(matrix(NA,nrow=nrow(subgrpRes),ncol=22*3))
+colnames(newCols) <- paste0(paste0("chr",c(1:22)),rep(c(".NAM",".EUR",".AFR"),each=22))
+subgrpRes <- cbind(subgrpRes,newCols)
+colnames(subgrpRes)
+
+namCols <- c(46:67)
+eurCols <- c(2:23)
+afrCols <- c(24:45)
+
+colnames(res)[namCols]; colnames(res)[eurCols]; colnames(res)[afrCols]
+nonPresL <- subgrpRes
+nonPresG <- subgrpRes
+pooledres <- subgrpRes
+
+for(i in 1:nrow(subgrpRes)){
+  pop <- subgrpRes$bkgrd[i]
+  subgrpRes$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #subgrpRes[i,3] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))[1]
+  subgrpRes[i,3:24] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))
+  
+  #subgrpRes[i,26] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))[1]
+  subgrpRes[i,25:46] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))
+  
+  #subgrpRes[i,49] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))[1]
+  subgrpRes[i,47:68] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))  
+  #
+  nonPresL$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  nonPresL[i,3:24] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,namCols]))
+  nonPresL[i,25:46] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,eurCols]))
+  if(pop=="Cuban"){nonPresL[i,25:46] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,eurCols],alter="greater"))}
+  nonPresL[i,47:68] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,afrCols]))  
+  #
+  nonPresG$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  nonPresG[i,3:24] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,namCols],alter="two.sided"))
+  nonPresG[i,25:46] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,eurCols],alter="two.sided"))
+  nonPresG[i,47:68] <- pValues(nonParam_CAnD(res[res$bkgrd==pop,afrCols],alter="two.sided"))  
+  #
+  
+  pooledres$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #pooledres[i,3] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))[1]
+  pooledres[i,3:24] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))
+  
+  #pooledres[i,26] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))[1]
+  pooledres[i,25:46] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))
+  
+  #pooledres[i,49] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))[1]
+  pooledres[i,47:68] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))  
+}
+# all of these are bonf corrected
+# these are the autosomal results, excluding the x chr from the pool
+
+auto_results <- list("CAnD_pvalue"=subgrpRes,"CAnD_nonP_less"=nonPresL,
+                     "CAnD_nonP_greater"=nonPresG,"Pooled_t"=pooledres)
+save(auto_results,file="cand_results_autoOnly_bonfCorr.RData")
+
+rm(list=ls())
+
+
+#####
+# 56. Parse CAnD results
+
+cand_results <- get(load("cand_results_inclX_bonfCorr.RData"))
+# make a table of the x chr results
+cand <- cand_results[["CAnD_pvalue"]]
+nonP <- cand_results[["CAnD_nonP"]]
+pooled <- cand_results[["Pooled_t"]]
+
+library(xtable)
+r1=cand[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+r2=nonP[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+r3=pooled[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+
+r1$method="CAnD"
+r2$method="nonParam_CAnD"
+r3$method="pooled_ttest"
+
+library(ggplot2); library(reshape); library(RColorBrewer)
+res <- rbind(melt(r1,c("bkgrd","n","method")),melt(r2,c("bkgrd","n","method")),
+             melt(r3,c("bkgrd","n","method")))
+res$Ancestry[res$variable=="chr23.NAM"] <- "America"
+res$Ancestry[res$variable=="chr23.EUR"] <- "Europe"
+res$Ancestry[res$variable=="chr23.AFR"] <- "Africa"
+res$bkgrd=paste0(res$bkgrd,"\nn=",res$n)
+SET1 <- setNames(brewer.pal(9, "Set1"),
+                 c("red", "blue", "green", "purple", "orange", "brown", "pink", "gray"))
+  levels <- c("Cuban\nn=1732", "Dominican\nn=897", "PuertoRican\nn=1703", "Mexican\nn=3635", 
+              "CentralAmerican\nn=1094", "SouthAmerican\nn=686", "Other/Unknown\nn=326")
+  col <- setNames(SET1[c("green", "orange", "purple", "red", "blue","green", "gray")], levels)
+  col["reference"] <- "gray80"
+
+res$bkgrd <- ordered(res$bkgrd,levels=levels)
+
+res$bg <- substr(res$bkgrd,start=1,stop=(regexpr("\n",res$bkgrd)-2))
+res$bg[res$bg=="CentralAmerica"] <- "CAm"
+res$bg[res$bg=="SouthAmerica"] <- "SAm"
+res$bg[res$bg=="PuertoRica"] <- "PR"
+res$bg[res$bg=="Other/Unknow"] <- "Unk"
+res$bg[res$bg=="Dominica"] <- "Dom"
+res$bg[res$bg=="Mexica"] <- "Mex"
+
+res$bg <- ordered(res$bg,levels=c("Cuba","Dom","PR","Mex","CAm","SAm","Unk"))
+
+pdf("pvalues_CAnD_etal_olga.pdf",width=11,height=9)
+ggplot(res,aes(x=bg,y=-log10(value))) + geom_point(size=3,aes(color=factor(bkgrd)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Self-Identified Background") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "bottom") +  labs(y=expression(-log["10"]*"(pvalue)")) 
+dev.off()
+
+## now take results, plot pvalues for all chrs for each self-id background in turn
+cand_results <- get(load("cand_results_autoOnly_bonfCorr.RData"))
+# make a table of the x chr results
+cand <- cand_results[["CAnD_pvalue"]]
+nonP <- cand_results[["CAnD_nonP_less"]]
+pooled <- cand_results[["Pooled_t"]]
+
+r1=cand
+r2=nonP
+r3=pooled
+
+r1$method="CAnD"
+r2$method="nonParam_CAnD"
+r3$method="pooled_ttest"
+
+res <- rbind(melt(r1,c("bkgrd","n","method")),melt(r2,c("bkgrd","n","method")),
+             melt(r3,c("bkgrd","n","method")))
+res$Ancestry <- NA
+res$Ancestry[grep("NAM",res$variable)] <- "America"
+res$Ancestry[grep("EUR",res$variable)] <- "Europe"
+res$Ancestry[grep("AFR",res$variable)] <- "Africa"
+res$bkgrd=paste0(res$bkgrd,"\nn=",res$n)
+SET1 <- setNames(brewer.pal(9, "Set1"),
+                 c("red", "blue", "green", "purple", "orange", "yellow", "brown", "pink", "gray"))
+levels <- c("Cuban\nn=1732", "Dominican\nn=897", "PuertoRican\nn=1703", "Mexican\nn=3635", 
+            "CentralAmerican\nn=1094", "SouthAmerican\nn=686", "Other/Unknown\nn=326")
+col <- setNames(SET1[c("green", "orange", "purple", "red", "yellow", "blue", "gray")], levels)
+col["reference"] <- "gray80"
+
+res$bkgrd <- factor(res$bkgrd)
+
+res$bg <- substr(res$bkgrd,start=1,stop=(regexpr("\n",res$bkgrd)-2))
+res$bg[res$bg=="CentralAmerica"] <- "CAm"
+res$bg[res$bg=="SouthAmerica"] <- "SAm"
+res$bg[res$bg=="PuertoRica"] <- "PR"
+res$bg[res$bg=="Other/Unknow"] <- "Unk"
+res$bg[res$bg=="Dominica"] <- "Dom"
+res$bg[res$bg=="Mexica"] <- "Mex"
+
+res$chr <- gsub("chr","",res$variable)
+res$chr <- gsub(".NAM","",res$chr)
+res$chr <- gsub(".EUR","",res$chr)
+res$chr <- gsub(".AFR","",res$chr)
+
+levels <- c(1:22)
+col <- setNames(c(SET1[c("green", "orange", "purple", "red", "blue","green", "pink")],
+                  SET1[c("green", "orange", "purple", "red",  "blue","green", "pink")],
+                  SET1[c("green", "orange", "purple", "red",  "blue","green", "pink")],
+                  SET1[c("green")]), levels)
+
+resPl <- res[res$bg=="CAm",]
+pdf("pvalues_CAnD_etal_CAm_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  ggtitle("Self-Identified Central Americans, n=1094")
+dev.off()
+
+resPl <- res[res$bg=="SAm",]
+pdf("pvalues_CAnD_etal_SAm_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  ggtitle("Self-Identified South Americans, n=686")
+dev.off()
+
+resPl <- res[res$bg=="PR",]
+pdf("pvalues_CAnD_etal_PR_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  ggtitle("Self-Identified Puerto Ricans, n=1703")
+dev.off()
+
+resPl <- res[res$bg=="Mex",]
+pdf("pvalues_CAnD_etal_Mex_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  ggtitle("Self-Identified Mexicans, n=3635")
+dev.off()
+
+resPl <- res[res$bg=="Dom",]
+pdf("pvalues_CAnD_etal_Dom_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  ggtitle("Self-Identified Dominicans, n=897")
+dev.off()
+
+resPl <- res[res$bg=="Cuba",]
+pdf("pvalues_CAnD_etal_Cuba_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  ggtitle("Self-Identified Cubans, n=1732")
+dev.off()
+
+resPl <- res[res$bg=="Unk",]
+pdf("pvalues_CAnD_etal_Unk_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  ggtitle("Self-Identified Other/Unknown, n=326")
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 57. Look at PR chr 2 results in depth
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+library(GWASTools)
+library(gdsfmt)
+
+# load in local ancestry estimates
+gdsfn <- "/projects/geneva/gcc-fs2/OLGA/genotype/native_american/olga_with_refpanel/reich_1000G/local_ancestry/gds/unique/olga_reich_1000G_lai_new_unique.gds"
+gdsobj <- openfn.gds(gdsfn)
+
+# need to get the mean values across chromosomes
+# figure out how to loop through and take means for each ancestry, by chr
+chrs <- read.gdsn(index.gdsn(gdsobj, "snp.chromosome"))
+length(chrs) # 14192
+(t <- table(chrs))
+#   1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16 
+#1116 1072  939  874  846  811  760  688  661  720  665  709  520  479  484  514 
+# 17   18   19   20   21   22 
+#506  488  402  438  245  255 
+stInd <- cumsum(t)
+
+# ok, so the ancestry estimates are matrices of sample x snp
+# just read in chr 2 ancestry estimates, for all SNPs/regions
+
+ancest <- data.frame(matrix(NA,nrow=12803,ncol=(1072*3+1)))
+colnames(ancest) <- c("scanID",rep(c("eur","afr","amer"),each=1072))
+
+ancest$scanID <- read.gdsn(index.gdsn(gdsobj,"sample.id"))
+
+tmpEur <- read.gdsn(index.gdsn(gdsobj,"dosage_eur"),start=c(1,stInd[2]),count=c(-1,t[2]))
+tmpAfr <- read.gdsn(index.gdsn(gdsobj,"dosage_afr"),start=c(1,stInd[2]),count=c(-1,t[2]))
+tmpNam <- read.gdsn(index.gdsn(gdsobj,"dosage_amer"),start=c(1,stInd[2]),count=c(-1,t[2]))
+# now have the three ancestry estimates across chr2
+
+# just subset to pr samples
+scan <- getobj("admix_xchr_aftermerge.RData")
+unrel <- getobj("unrelated_pcair_deg4.RData")
+
+scan <- scan[is.element(scan$scanID,unrel),]
+dim(scan) # 10073 in scan; this is correct
+
+tmpEur <- data.frame(tmpEur)
+tmpEur$scanID <- ancest$scanID
+tmpEur <- merge(tmpEur,scan[,c("scanID","bkgrd")],by="scanID",all.y=TRUE)
+dim(tmpEur) # 10073 1074
+
+tmpAfr <- data.frame(tmpAfr)
+tmpAfr$scanID <- ancest$scanID
+tmpAfr <- merge(tmpAfr,scan[,c("scanID","bkgrd")],by="scanID",all.y=TRUE)
+dim(tmpAfr) # 10073 1074
+
+tmpNam <- data.frame(tmpNam)
+tmpNam$scanID <- ancest$scanID
+tmpNam <- merge(tmpNam,scan[,c("scanID","bkgrd")],by="scanID",all.y=TRUE)
+dim(tmpNam) # 10073 1074
+
+# get mean ancestry at each position across all PR individs
+meanEur <- data.frame(mn=apply(tmpEur[tmpEur$bkgrd=="PuertoRican",c(2:1073)],2,function(x){sum(x)/(2*length(x))}))
+meanAfr <- data.frame(mn=apply(tmpAfr[tmpAfr$bkgrd=="PuertoRican",c(2:1073)],2,function(x){sum(x)/(2*length(x))}))
+meanNam <- data.frame(mn=apply(tmpNam[tmpNam$bkgrd=="PuertoRican",c(2:1073)],2,function(x){sum(x)/(2*length(x))}))
+
+meanEur$Ancestry <- "Europe"
+meanAfr$Ancestry <- "Africa"
+meanNam$Ancestry <- "America"
+
+meanNam$Segment <- 1:nrow(meanNam)
+meanEur$Segment <- 1:nrow(meanEur)
+meanAfr$Segment <- 1:nrow(meanAfr)
+
+res <- rbind(meanEur,meanAfr,meanNam)
+pdf("localAncestry_chr2_PR.pdf",width=11)
+ggplot(res,aes(x=Segment,y=mn,color=Ancestry)) + geom_line(size=1.5) + theme_bw() +
+  ggtitle("Mean Local Ancestry Proportion on Chromosome 2\n1703 Puerto Ricans") +
+  ylab("Mean Proportion Local Ancestry")
+dev.off()
+
+# perform CAnD in a sliding window fashion, comparing mean local ancestry in a 50 segment window to 
+# a mean of the remaining chromosome
+
+# only do for NAM ancestry, since that was sig in the global test
+# calculate the means first; it'll be 2 cols per segment
+segMeans <- data.frame(matrix(NA,nrow=sum(tmpNam$bkgrd=="PuertoRican"),ncol=21*2+1))
+colnames(segMeans) <- c("scanID",paste0(c("s","wo_s"),rep(1:21,each=2)))
+
+# do the first segment by hand
+smNam <- tmpNam[tmpNam$bkgrd=="PuertoRican",2:101]
+lgNam <- tmpNam[tmpNam$bkgrd=="PuertoRican",102:(ncol(tmpNam)-1)]
+segMeans$s1 <- rowSums(smNam)/(2*ncol(smNam))
+segMeans$wo_s1 <- rowSums(lgNam)/(2*ncol(lgNam))
+
+for(i in 2:21){
+  cl <- paste0("s",i)
+  cl2 <- paste0("wo_s",i)
+  
+  if(i==21){
+    smNam <- tmpNam[tmpNam$bkgrd=="PuertoRican",(1+(i-1)*50):(ncol(tmpNam)-1)]
+    lgNam <- tmpNam[tmpNam$bkgrd=="PuertoRican",2:((i-1)*50)]
+  }else{
+    smNam <- tmpNam[tmpNam$bkgrd=="PuertoRican",(1+(i-1)*50):((i-1)*50+100)]
+    lgNam <- tmpNam[tmpNam$bkgrd=="PuertoRican",c(2:((i-1)*50),((i-1)*50+100+1):(ncol(tmpNam)-1))]
+  }
+  segMeans[,cl] <- rowSums(smNam)/(2*ncol(smNam))
+  segMeans[,cl2] <- rowSums(lgNam)/(2*ncol(lgNam))
+}
+
+pvals <- rep(NA,21)
+for(i in seq(from=2,to=ncol(segMeans),by=2)){
+  pvals[(i/2)] <- t.test(segMeans[,i],segMeans[,(i+1)],paired=TRUE)$p.value
+}
+
+pvals <- pvals*(length(pvals))
+pvals[pvals>=1] <- 1
+
+res <- data.frame(pvalue=pvals,id=1:length(pvals))
+
+pdf("cand_pvalues_chr2_NAM_pr_100segmentBlock.pdf")
+ggplot(res,aes(x=id,y=-log10(pvalue))) + theme_bw() + geom_point() +xlab("100 Segment Block") + geom_hline(yintercept=-log10(0.05))+
+  ylab(expression(paste(-log[10],"(pvalue)"))) + 
+  ggtitle("CAnD Results for Native American Ancestry, Chr 2\n1703 Puerto Ricans")
+dev.off()
+
+# segments 2, 6 are significant
+# look at these on the local ancestry plot
+# seg2: 50:150
+# seg6: 250:350
+
+res <- rbind(meanNam)
+res$nextMn <- c(res$mn[2:nrow(res)],res$mn[nrow(res)])
+
+pdf("localAncestry_chr2_PR_withSigBlocks.pdf",width=11)
+par(mfrow=c(2,1))
+
+res$CAnD_Significant <- "No"
+res$CAnD_Significant[(res$Segment>50&res$Segment<150)] <- "Block 2"
+
+ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
+                               xend=Segment+1,yend=nextMn),size=1.5) + theme_bw() +
+  ggtitle("Mean Native American Ancestry on Chromosome 2\n1703 Puerto Ricans") +
+  ylab("Mean Proportion Local Ancestry") + geom_segment(x=50,y=mean(segMeans[,"s2"]),xend=150,size=1.1,
+                                                        yend=mean(segMeans[,"s2"]),color="gray") +
+  geom_segment(x=1,y=mean(segMeans[,"wo_s2"]),xend=49,yend=mean(segMeans[,"wo_s2"]),color="gray",size=1.1) + 
+  geom_segment(x=151,y=mean(segMeans[,"wo_s2"]),xend=1072,yend=mean(segMeans[,"wo_s2"]),color="gray",size=1.1)
+
+res$CAnD_Significant <- "No"
+res$CAnD_Significant[(res$Segment>250&res$Segment<350)] <- "Block 6"
+
+ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
+                               xend=Segment+1,yend=nextMn),size=1.5) + theme_bw() +
+  ylab("Mean Proportion Local Ancestry") + 
+  geom_segment(x=1,xend=249,y=mean(segMeans[,"wo_s6"]),yend=mean(segMeans[,"wo_s6"]),size=1.1,color="gray") +
+  geom_segment(x=351,xend=1072,y=mean(segMeans[,"wo_s6"]),yend=mean(segMeans[,"wo_s6"]),size=1.1,color="gray") +
+  geom_segment(x=250,xend=350,y=mean(segMeans[,"s6"]),yend=mean(segMeans[,"s6"]),size=1.1,color="gray")
+dev.off()
+
+rm(list=ls())
+
+
+#####

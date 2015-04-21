@@ -37,6 +37,25 @@ source("assocTestMixedModel_v7.R")
 # 25. 1M type I error runs
 # 26. Power graph for beta1=0.07 simulations
 # 27. Type I error rate from 600K runs (for comparison)
+# 28. Check a few iterations of model; what's going on with the 'x' model?
+# 29. Rerun some null simulations
+# 30. Look at power graph zoomed in on x-axis
+# 31. Rerun power calculations
+# 32. Simulate phenotypes with different pedigree structure
+# 33. Look at new power results
+# 34. New null simulations with extreme sigma values
+# 35. Boxplots of var comp estimates
+# 36. Add new null sims to var comp estimates
+# 37. Process simulations excl g_x term
+# 38. Null simulations with different 8 person pedigree
+# 39. Var comp estimates for 8 person pedigree (fem)
+# 40. Var comp estimates for 8 ped excl gX term
+# 41. Process null simulations for 16 ped
+# 42. Var comp estimates for 16 person pedigree
+# 43. Look at new power results, beta=0.07
+# 44. New power results, extreme sigma, beta=0.05
+# 45. Type I error from causal=F SNPs in power results
+# 46. Var comp estiamtes for 16 person ped, extreme sigma
 
 
 
@@ -2670,22 +2689,22 @@ save(varCI,file="varEst_power_results_feb6.RData")
 
 rm(list=ls())
 
-tmp <- get(load("pvals_power_results_mar23.RData"))
+tmp <- get(load("pvals_power_results_apr7.RData"))
 tmp2 <- get(load("pvals_power_results_ALL.RData"))
 
-dim(tmp); dim(tmp2) # 900000 12 | 3590976 12
+dim(tmp); dim(tmp2) # 450000 12 | 4490976 12
 
 totalRes <- rbind(tmp,tmp2)
-dim(totalRes) # 4490976 12
+dim(totalRes) # 4940976 12
 
-sum(duplicated(totalRes$pval)) # 490080; dang.
-totalRes <- totalRes[!duplicated(totalRes$pval),]
-sum(duplicated(totalRes$pval)) # 0; good
-dim(totalRes) # 4040976 12
+sum(duplicated(totalRes$pval)) # 0; great!
+#totalRes <- totalRes[!duplicated(totalRes$pval),]
+#sum(duplicated(totalRes$pval)) # 0; good
+#dim(totalRes) # 4040976 12
 
 ftable(totalRes$model,totalRes$causal,totalRes$beta1)
 # we have 326043 for each model for beta1=0.05, causal=T
-# added some beta=0.07 iterations in there too, 303K for causal=T
+# we have 378012 for each model for beta1=0.07, causal=T
 
 save(totalRes,file="pvals_power_results_ALL.RData")
 
@@ -2698,37 +2717,37 @@ rm(list=ls())
 source("powerGraph.R")
 
 totalRes <- get(load("pvals_power_results_ALL.RData"))
-dim(totalRes) # 1835976 12
+dim(totalRes) # 4490976 12
 
 # be sure to exclude the NA rows.
 sum(is.na(totalRes$pval)) # 0
 
 ftable(totalRes$causal,totalRes$beta1,totalRes$model)
 # auto  both     x
-# FALSE 0.05  80578 78972 81049
-# 0.06   7995  6142  8568
-# 0.07   3012  2618  3208
-# 0.08   8819  7158  9584
-# 0.09   7567  5548  8799
-# 0.1    8295  6293  9100
-# 0.13   8949  7242  9624
-# 0.15    994   994   994
-# 0.18   1000  1000  1000
-# 0.2    1000  1000  1000
-# 0.25    997   997   997
-# 0.3    1000  1000  1000
-# TRUE  0.05  80578 78972 81049
-# 0.06   7995  6142  8568
-# 0.07   3012  2618  3208
-# 0.08   8819  7158  9584
-# 0.09   7567  5548  8799
-# 0.1    8295  6293  9100
-# 0.13   8949  7242  9624
-# 0.15    994   994   994
-# 0.18   1000  1000  1000
-# 0.2    1000  1000  1000
-# 0.25    997   997   997
-# 0.3    1000  1000  1000
+# FALSE 0.05  326043 324437 326514
+# 0.06    7995   6142   8568
+# 0.07  378012 377618 378208
+# 0.08    8819   7158   9584
+# 0.09    7567   5548   8799
+# 0.1     8295   6293   9100
+# 0.13    8949   7242   9624
+# 0.15     994    994    994
+# 0.18    1000   1000   1000
+# 0.2     1000   1000   1000
+# 0.25     997    997    997
+# 0.3     1000   1000   1000
+# TRUE  0.05  326043 324437 326514
+# 0.06    7995   6142   8568
+# 0.07  378012 377618 378208
+# 0.08    8819   7158   9584
+# 0.09    7567   5548   8799
+# 0.1     8295   6293   9100
+# 0.13    8949   7242   9624
+# 0.15     994    994    994
+# 0.18    1000   1000   1000
+# 0.2     1000   1000   1000
+# 0.25     997    997    997
+# 0.3     1000   1000   1000
 
 powerGraph(totalRes,b=0.05,fn="power_3models_beta05.pdf")
 
@@ -2736,9 +2755,9 @@ alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05)
 
 tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
 
-(numBoth <- sum(totalRes$model=="both"&!totalRes$causal)) # 296929
-(numX <- sum(totalRes$model=="x"&!totalRes$causal)) # 312888
-(numAuto <- sum(totalRes$model=="auto"&!totalRes$causal)) # 308171
+(numBoth <- sum(totalRes$model=="both"&!totalRes$causal)) # 739429
+(numX <- sum(totalRes$model=="x"&!totalRes$causal)) # 755388
+(numAuto <- sum(totalRes$model=="auto"&!totalRes$causal)) # 750671
 
 for(a in 1:length(alpha)){
   tyIerr$both[a] <- sum(totalRes[totalRes$model=="both"&!totalRes$causal,"pval"]<alpha[a])/numBoth
@@ -2752,42 +2771,42 @@ xtable(tyIerr,digits=6)
 # get CIs
 stdErr <- sqrt(alpha*(1-alpha)/numBoth)
 (ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) # all contain the true value
-# [1,]  4.887750e-02 5.135450e-02
-# [2,]  9.345148e-03 1.047597e-02
-# [3,]  4.583885e-03 5.385517e-03
-# [4,]  8.038806e-04 1.163101e-03
-# [5,]  3.268835e-04 5.809542e-04
-# [6,]  3.564163e-05 1.492883e-04
-# [7,]  1.866017e-05 9.902249e-05
-# [8,] -9.564015e-06 2.637582e-05
+# [1,] 4.953778e-02 5.053132e-02
+# [2,] 9.722778e-03 1.017636e-02
+# [3,] 4.793053e-03 5.114592e-03
+# [4,] 8.949195e-04 1.039005e-03
+# [5,] 4.304979e-04 5.324073e-04
+# [6,] 6.240868e-05 1.079931e-04
+# [7,] 2.445493e-05 5.668876e-05
+# [8,] 9.065207e-07 1.532222e-05
 
 xtable(ci_both,digits=5)
 bothRes <- cbind(alpha,tyIerr$both,ci_both)
 xtable(bothRes,digits=5)
 
 (ci_justX <- cbind(tyIerr$justX-1.96*stdErr,tyIerr$justX+1.96*stdErr)) # look good!
-# [1,]  4.905686e-02 5.153385e-02
-# [2,]  9.180887e-03 1.031171e-02
-# [3,]  4.779917e-03 5.581549e-03
-# [4,]  7.987256e-04 1.157946e-03
-# [5,]  3.102511e-04 5.643218e-04
-# [6,]  4.693957e-05 1.605862e-04
-# [7,]  1.170029e-05 9.206260e-05
-# [8,] -1.796992e-05 1.796992e-05
+# [1,] 4.948284e-02 5.047638e-02
+# [2,] 9.715120e-03 1.016870e-02
+# [3,] 4.836662e-03 5.158202e-03
+# [4,] 9.142053e-04 1.058291e-03
+# [5,] 4.295930e-04 5.315024e-04
+# [6,] 6.590395e-05 1.114883e-04
+# [7,] 2.227395e-05 5.450778e-05
+# [8,] 7.350893e-07 1.515079e-05
 
 xtable(ci_justX,digits=5)
 justXRes <- cbind(alpha,tyIerr$justX,ci_justX)
 xtable(justXRes,digits=5)
 
 (ci_justAuto <- cbind(tyIerr$justAuto-1.96*stdErr,tyIerr$justAuto+1.96*stdErr)) # NONE contain true value!!
-# [1,] 7.402685e-02 7.650385e-02
-# [2,] 1.940294e-02 2.053377e-02
-# [3,] 1.058178e-02 1.138341e-02
-# [4,] 2.439317e-03 2.798537e-03
-# [5,] 1.301470e-03 1.555541e-03
-# [6,] 3.195034e-04 4.331501e-04
-# [7,] 1.671826e-04 2.475449e-04
-# [8,] 4.347118e-05 7.941102e-05
+# [1,] 7.443486e-02 7.542840e-02
+# [2,] 1.921581e-02 1.966940e-02
+# [3,] 1.069219e-02 1.101373e-02
+# [4,] 2.697479e-03 2.841565e-03
+# [5,] 1.465022e-03 1.566932e-03
+# [6,] 3.755181e-04 4.211025e-04
+# [7,] 2.076829e-04 2.399167e-04
+# [8,] 4.874209e-05 6.315779e-05
 
 justAutoRes <- cbind(alpha,tyIerr$justAuto,ci_justAuto)
 xtable(justAutoRes,digits=5)
@@ -2959,7 +2978,9 @@ ci_auto$model <- "auto"
 ci_both$est <- tyIerr$both; ci_both$alpha <- tyIerr$alpha
 ci_auto$est <- tyIerr$justAuto; ci_auto$alpha <- tyIerr$alpha
 ci_x$est <- tyIerr$justX; ci_x$alpha <- tyIerr$alpha
-dfc <- rbind(ci_both[1:5,],ci_auto[1:5,],ci_x[1:5,])
+dfc <- rbind(ci_both,ci_auto,ci_x)
+dfc$sigma_a <- 0.5
+dfc$sigma_x <- 0.3
 
 pdf("tyIerr_1M_cis_a05x03.pdf")
 ggplot(dfc,aes(x=model,y=est,color=as.character(alpha),ymin = Lower, ymax=Upper))  +
@@ -3025,7 +3046,10 @@ ci_auto$model <- "auto"
 ci_both$est <- tyIerr$both; ci_both$alpha <- tyIerr$alpha
 ci_auto$est <- tyIerr$justAuto; ci_auto$alpha <- tyIerr$alpha
 ci_x$est <- tyIerr$justX; ci_x$alpha <- tyIerr$alpha
-dfc <- rbind(ci_both[1:5,],ci_auto[1:5,],ci_x[1:5,])
+tmpdfc <- rbind(ci_both,ci_auto,ci_x)
+tmpdfc$sigma_a <- 0.5
+tmpdfc$sigma_x <- 0.5
+dfc <- rbind(dfc,tmpdfc)
 
 pdf("tyIerr_1M_cis_a05x05.pdf")
 ggplot(dfc,aes(x=model,y=est,color=as.character(alpha),ymin = Lower, ymax=Upper))  +
@@ -3092,7 +3116,11 @@ ci_auto$model <- "auto"
 ci_both$est <- tyIerr$both; ci_both$alpha <- tyIerr$alpha
 ci_auto$est <- tyIerr$justAuto; ci_auto$alpha <- tyIerr$alpha
 ci_x$est <- tyIerr$justX; ci_x$alpha <- tyIerr$alpha
-dfc <- rbind(ci_both[1:5,],ci_auto[1:5,],ci_x[1:5,])
+tmpdfc <- rbind(ci_both,ci_auto,ci_x)
+tmpdfc$sigma_a <- 0.3
+tmpdfc$sigma_x <- 0.5
+dfc <- rbind(dfc,tmpdfc)
+
 
 pdf("tyIerr_1M_cis_a03x05.pdf")
 ggplot(dfc,aes(x=model,y=est,color=as.character(alpha),ymin = Lower, ymax=Upper))  +
@@ -3109,6 +3137,53 @@ ggplot(dfc,aes(x=model,y=est,color=as.character(alpha),ymin = Lower, ymax=Upper)
   ggtitle("Estimate (95% CI) of Type I Error Rate\nSigma_A=0.3, Sigma_X=0.5") +
   theme_bw() 
 dev.off()
+
+
+## make a plot of all values, for alpha=5e-02
+
+dfc$sigma_a <- paste0("sigma_a=",dfc$sigma_a)
+dfc$sigma_x <- paste0("sigma_x=",dfc$sigma_x)
+
+dfcSm <- dfc[dfc$alpha==5e-02,]
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=Lower,ymax=Upper))+
+  facet_grid(sigma_x~sigma_a) + theme_bw() + geom_hline(aes(yintercept=5e-02,color="gray"))+
+  ylab("Type I Error Rate") 
+dev.off()
+
+dfcSm <- dfc[dfc$alpha==5e-03,]
+pdf("typeIerror_alpha5e-3.pdf")
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=Lower,ymax=Upper))+
+  facet_grid(sigma_x~sigma_a) + theme_bw() + geom_hline(aes(yintercept=5e-03,color="gray"))+
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=0.005")))
+dev.off()
+
+pdf("typeIerror_alpha5e-4.pdf")
+dfcSm <- dfc[dfc$alpha==5e-04,]
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=Lower,ymax=Upper))+
+  facet_grid(sigma_x~sigma_a) + theme_bw() + geom_hline(aes(yintercept=5e-04,color="gray"))+
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=0.0005")))
+dev.off()
+
+pdf("typeIerror_alpha5e-5.pdf")
+dfcSm <- dfc[dfc$alpha==5e-05,]
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=Lower,ymax=Upper))+
+  facet_grid(sigma_x~sigma_a) + theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+
+pdf("typeIerror_alpha5e-6.pdf")
+dfcSm <- dfc[dfc$alpha==5e-06,]
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=Lower,ymax=Upper))+
+  facet_grid(sigma_x~sigma_a) + theme_bw() + geom_hline(aes(yintercept=5e-06,color="gray"))+
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-06")))
+dev.off()
+
+
+
+
+
+
 
 rm(list=ls())
 
@@ -3164,13 +3239,13 @@ rm(list=ls())
 alpha <- c(0.05,0.01,0.005,0.001,5e-04,1e-04,5e-05,1e-05,5e-06,1e-06)
 
 totalRes <- get(load("pvals_power_results_ALL.RData"))
-dim(totalRes) # 4040976 12
+dim(totalRes) # 4490976 12
 
 tyIerr <- data.frame("alpha"=alpha,"both"=NA,"justX"=NA,"justAuto"=NA)
 
-(numBoth <- sum(totalRes$model=="both"&!totalRes$causal)) # 589429
-(numX <- sum(totalRes$model=="x"&!totalRes$causal)) # 605388
-(numAuto <- sum(totalRes$model=="auto"&!totalRes$causal)) # 600671
+(numBoth <- sum(totalRes$model=="both"&!totalRes$causal)) # 739429
+(numX <- sum(totalRes$model=="x"&!totalRes$causal)) # 755388
+(numAuto <- sum(totalRes$model=="auto"&!totalRes$causal)) # 750671
 
 for(a in 1:length(alpha)){
   tyIerr$both[a] <- sum(totalRes[!totalRes$causal&totalRes$model=="both","pval"]<alpha[a])/numBoth
@@ -3178,17 +3253,16 @@ for(a in 1:length(alpha)){
   tyIerr$justAuto[a] <- sum(totalRes[!totalRes$causal&totalRes$model=="auto","pval"]<alpha[a])/numAuto
 }
 tyIerr
-#    alpha         both        justX     justAuto
-# 1  5e-02 5.004899e-02 5.001558e-02 7.486336e-02
-# 2  1e-02 9.948392e-03 9.923749e-03 1.941921e-02
-# 3  5e-03 4.977206e-03 5.013316e-03 1.085588e-02
-# 4  1e-03 9.707584e-04 9.847322e-04 2.764659e-03
-# 5  5e-04 4.801115e-04 4.747291e-04 1.521451e-03
-# 6  1e-04 8.578795e-05 9.259423e-05 4.025628e-04
-# 7  5e-05 4.214145e-05 3.968324e-05 2.294016e-04
-# 8  1e-05 9.030310e-06 8.818498e-06 5.772040e-05
-# 9  5e-06 6.020207e-06 5.878998e-06 3.552025e-05
-# 10 1e-06 3.010103e-06 2.939499e-06 5.920041e-06
+# alpha         both        justX     justAuto
+# 1 5e-02 5.003455e-02 4.997961e-02 7.493163e-02
+# 2 1e-02 9.949569e-03 9.941911e-03 1.944261e-02
+# 3 5e-03 4.953822e-03 4.997432e-03 1.085296e-02
+# 4 1e-03 9.669623e-04 9.862481e-04 2.769522e-03
+# 5 5e-04 4.814526e-04 4.805477e-04 1.515977e-03
+# 6 1e-04 8.520088e-05 8.869614e-05 3.983103e-04
+# 7 5e-05 4.057185e-05 3.839087e-05 2.237998e-04
+# 8 1e-05 8.114369e-06 7.942938e-06 5.594994e-05
+
 
 stdErr <- sqrt(alpha*(1-alpha)/numBoth)
 (ci_both <- cbind(tyIerr$both-1.96*stdErr,tyIerr$both+1.96*stdErr)) 
@@ -3240,7 +3314,2522 @@ ggplot(tyIerrSm,aes(x=model,y=log(est),fill=as.factor(alpha),ymin=log(lower), ym
   coord_flip()+theme_bw()+xlab(expression(alpha)) +
   ylab("log(Type I Error Rate)")
 
+dfcSm <- tyIerr[tyIerr$alpha==5e-03,]
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+      theme_bw() + geom_hline(aes(yintercept=5e-03,color="gray"))+
+     ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-03")))
+dev.off()
+
+dfcSm <- tyIerr[tyIerr$alpha==5e-04,]
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-04,color="gray"))+
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-04")))
+dev.off()
+
+dfcSm <- tyIerr[tyIerr$alpha==5e-05,]
+ggplot(dfcSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 28. Check a few iterations of model; what's going on with the 'x' model?
+
+# simulate 100 genotypes
+# simulate 100 phenotypes, all with beta1=0
+# perform the mlm_x model
+# see how many significant results
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+library(MASS); library(parallel)
+library(GWASTools)
+library(corpcor); library(doSNOW)
+source("sim_phenotype.R")
+source("estVarComp.R")
+source("allele_drop_functions.R")
+source("assocTestMixedModel_v7.R")
+
+n <- 8000
+
+TEMP=c(2,1,2,1,1,1,2,2,1,2,1,2,1,2,1,2)
+SEX <- rep(NA,length(TEMP))
+SEX[TEMP==1]="M"
+SEX[TEMP==2]="F"
+
+sex <- rep(SEX,(n/16))
+
+kinX <- get(load("500Peds_xKinship.RData"))
+kinAuto <- get(load("500Peds_autoKinship.RData"))
+
+kinAuto <- matrix(kinAuto,nrow=n,ncol=n)
+kinX <- matrix(kinX,nrow=n,ncol=n)
+
+genoMat <- matrix(NA,nrow=10000,ncol=n)
+colsToGeno <- split(1:n,rep(1:n,each=16,length=n))
+geno <- do.call(cbind,lapply(colsToGeno,function(x){genoMat[,x]=Family_alleles_NmarkerX(rep(0.2,10000),10000,SEX)}))
+dim(geno) # 100 8000; so we have 100 genotypes simulated
+
+##
+# sigmaXMat <- mvrnorm(500,mu=rep(0,16),Sigma=kinX[1:16,1:16])
+# sigmaAMat <- mvrnorm(500,mu=rep(0,16),Sigma=kinAuto[1:16,1:16])
+# 
+# noise <- rnorm(n,mean=0,sd=1)
+# 
+# sigmaA <- 0.5
+# sigmaX <- 0.5
+# pheno <- noise+sigmaA*as.vector(t(sigmaAMat))+sigmaX*as.vector(t(sigmaXMat))
+
+## perform MLM-X on the 100 simulated genotypes
+scan1 <- data.frame(scanID=1:n,sex=sex,pheno=pheno)
+scan1 <- ScanAnnotationDataFrame(scan1)
+
+genoMt <- MatrixGenotypeReader(genotype=geno,snpID=as.integer(1:nrow(geno)),
+                               chromosome=as.integer(rep(23,nrow(geno))),
+                               position=as.integer(1:nrow(geno)), scanID=scan1$scanID)
+
+genoData <- GenotypeData(genoMt,scanAnnot=scan1)
+
+snpStart <- 1
+snpEnd <- 10000
+
+#colnames(kinX) <- getScanID(genoData)
+#colnames(kinAuto) <- getScanID(genoData)
+
+# covMatListBoth <- list(kinX,kinAuto) # this is the X chr kinship matrix for all samples
+# names(covMatListBoth) <- c("kinshipX","kinshipAutos")
+
+# varCompBoth <- estVarComp(scan1,covMatList=covMatListBoth,"pheno")
+# varBothci <- estVarCompCI(varCompBoth,prop=FALSE)
+# varBothci$model <- "both"
+# 
+# cholSigBoth <- varCompBoth[["cholSigmaInv"]]
+mmResBoth <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigBoth,outcome="pheno")
+mmResBoth$causal <- FALSE
+mmResBoth$model <- "both"
+
+# varCompA <- estVarComp(scan1,covMatList=list(kinAuto),"pheno")
+# varAutoci <- estVarCompCI(varCompA,prop=FALSE)
+# varAutoci$model <- "auto"
+# 
+# cholSigA <- varCompA[["cholSigmaInv"]]
+mmResA <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigA,outcome="pheno")
+mmResA$causal <- FALSE
+mmResA$model <- "auto"
+
+# varCompX <- estVarComp(scan1,covMatList=list(kinX),"pheno")
+# varXci <- estVarCompCI(varCompX,prop=FALSE)
+# varXci$model <- "x"
+# 
+# cholSigX <- varCompX[["cholSigmaInv"]]
+mmResX <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigX,outcome="pheno")
+mmResX$causal <- FALSE
+mmResX$model <- "x"
+
+mmResF <- rbind(mmResBoth,mmResA,mmResX)
+res <- list(sigmaA,sigmaX,mmResF)
+names(res) <- c("sigma_auto","sigma_x","mm_res")
+
+#####
+sigmaA <- 0.5
+sigmaX <- 0.3
+pheno <- noise+sigmaA*as.vector(t(sigmaAMat))+sigmaX*as.vector(t(sigmaXMat))
+
+## perform MLM-X on the 100 simulated genotypes
+scan1 <- data.frame(scanID=1:n,sex=sex,pheno=pheno)
+scan1 <- ScanAnnotationDataFrame(scan1)
+
+genoData <- GenotypeData(genoMt,scanAnnot=scan1)
+
+varCompBoth <- estVarComp(scan1,covMatList=covMatListBoth,"pheno")
+varBothci <- estVarCompCI(varCompBoth,prop=FALSE)
+varBothci$model <- "both"
+
+cholSigBoth <- varCompBoth[["cholSigmaInv"]]
+mmResBoth <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigBoth,outcome="pheno")
+mmResBoth$causal <- FALSE
+mmResBoth$model <- "both"
+
+varCompA <- estVarComp(scan1,covMatList=list(kinAuto),"pheno")
+varAutoci <- estVarCompCI(varCompA,prop=FALSE)
+varAutoci$model <- "auto"
+
+cholSigA <- varCompA[["cholSigmaInv"]]
+mmResA <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigA,outcome="pheno")
+mmResA$causal <- FALSE
+mmResA$model <- "auto"
+
+varCompX <- estVarComp(scan1,covMatList=list(kinX),"pheno")
+varXci <- estVarCompCI(varCompX,prop=FALSE)
+varXci$model <- "x"
+
+cholSigX <- varCompX[["cholSigmaInv"]]
+mmResX <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigX,outcome="pheno")
+mmResX$causal <- FALSE
+mmResX$model <- "x"
+
+mmResF2 <- rbind(mmResBoth,mmResA,mmResX)
+mmResF2$sigma_a <- sigmaA
+mmResF2$sigma_x <- sigmaX
+res2 <- list(sigmaA,sigmaX,mmResF2)
+names(res2) <- c("sigma_auto","sigma_x","mm_res")
+
+#####
+sigmaA <- 0.3
+sigmaX <- 0.3
+pheno <- noise+sigmaA*as.vector(t(sigmaAMat))+sigmaX*as.vector(t(sigmaXMat))
+
+## perform MLM-X on the 100 simulated genotypes
+scan1 <- data.frame(scanID=1:n,sex=sex,pheno=pheno)
+scan1 <- ScanAnnotationDataFrame(scan1)
+
+genoData <- GenotypeData(genoMt,scanAnnot=scan1)
+
+varCompBoth <- estVarComp(scan1,covMatList=covMatListBoth,"pheno")
+varBothci <- estVarCompCI(varCompBoth,prop=FALSE)
+varBothci$model <- "both"
+
+cholSigBoth <- varCompBoth[["cholSigmaInv"]]
+mmResBoth <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigBoth,outcome="pheno")
+mmResBoth$causal <- FALSE
+mmResBoth$model <- "both"
+
+varCompA <- estVarComp(scan1,covMatList=list(kinAuto),"pheno")
+varAutoci <- estVarCompCI(varCompA,prop=FALSE)
+varAutoci$model <- "auto"
+
+cholSigA <- varCompA[["cholSigmaInv"]]
+mmResA <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigA,outcome="pheno")
+mmResA$causal <- FALSE
+mmResA$model <- "auto"
+
+varCompX <- estVarComp(scan1,covMatList=list(kinX),"pheno")
+varXci <- estVarCompCI(varCompX,prop=FALSE)
+varXci$model <- "x"
+
+cholSigX <- varCompX[["cholSigmaInv"]]
+mmResX <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigX,outcome="pheno")
+mmResX$causal <- FALSE
+mmResX$model <- "x"
+
+mmResF3 <- rbind(mmResBoth,mmResA,mmResX)
+mmResF3$sigma_a <- sigmaA
+mmResF3$sigma_x <- sigmaX
+res3 <- list(sigmaA,sigmaX,mmResF3)
+names(res3) <- c("sigma_auto","sigma_x","mm_res")
+
+#####
+sigmaA <- 0.3
+sigmaX <- 0.5
+pheno <- noise+sigmaA*as.vector(t(sigmaAMat))+sigmaX*as.vector(t(sigmaXMat))
+
+## perform MLM-X on the 100 simulated genotypes
+scan1 <- data.frame(scanID=1:n,sex=sex,pheno=pheno)
+scan1 <- ScanAnnotationDataFrame(scan1)
+
+genoData <- GenotypeData(genoMt,scanAnnot=scan1)
+
+varCompBoth <- estVarComp(scan1,covMatList=covMatListBoth,"pheno")
+varBothci <- estVarCompCI(varCompBoth,prop=FALSE)
+varBothci$model <- "both"
+
+cholSigBoth <- varCompBoth[["cholSigmaInv"]]
+mmResBoth <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigBoth,outcome="pheno")
+mmResBoth$causal <- FALSE
+mmResBoth$model <- "both"
+
+varCompA <- estVarComp(scan1,covMatList=list(kinAuto),"pheno")
+varAutoci <- estVarCompCI(varCompA,prop=FALSE)
+varAutoci$model <- "auto"
+
+cholSigA <- varCompA[["cholSigmaInv"]]
+mmResA <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigA,outcome="pheno")
+mmResA$causal <- FALSE
+mmResA$model <- "auto"
+
+varCompX <- estVarComp(scan1,covMatList=list(kinX),"pheno")
+varXci <- estVarCompCI(varCompX,prop=FALSE)
+varXci$model <- "x"
+
+cholSigX <- varCompX[["cholSigmaInv"]]
+mmResX <- assocTestMixedModel(genoData,snpStart=snpStart,snpEnd=snpEnd,cholSigX,outcome="pheno")
+mmResX$causal <- FALSE
+mmResX$model <- "x"
+
+mmResF4 <- rbind(mmResBoth,mmResA,mmResX)
+mmResF4$sigma_a <- sigmaA
+mmResF4$sigma_x <- sigmaX
+res4 <- list(sigmaA,sigmaX,mmResF4)
+names(res4) <- c("sigma_auto","sigma_x","mm_res")
 
 
 
+## make some plots
+library(ggplot2)
+
+mmResF$sigma_a <- res[["sigma_auto"]]
+mmResF$sigma_x <- res[["sigma_x"]]
+
+tyIerr <- expand.grid(model=c("auto","both","x"),alpha=c(5e-03,1e-03),sigma_x=c(0.5,0.3),sigma_a=c(0.5,0.3))
+tyIerr$est <- NA
+tyIerr$lower <- NA; tyIerr$upper <- NA
+for(i in 1:6){
+  tyIerr$est[i] <- sum(mmResF$pval[mmResF$model==tyIerr$model[i]]<tyIerr$alpha[i])/sum(mmResF$model==tyIerr$model[i])
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/sum(mmResF$model==tyIerr$model[i]))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+for(i in 7:12){
+  tyIerr$est[i] <- sum(mmResF2$pval[mmResF2$model==tyIerr$model[i]]<tyIerr$alpha[i])/sum(mmResF2$model==tyIerr$model[i])
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/sum(mmResF2$model==tyIerr$model[i]))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+for(i in 13:18){
+  tyIerr$est[i] <- sum(mmResF4$pval[mmResF4$model==tyIerr$model[i]]<tyIerr$alpha[i])/sum(mmResF4$model==tyIerr$model[i])
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/sum(mmResF4$model==tyIerr$model[i]))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+for(i in 19:24){
+  tyIerr$est[i] <- sum(mmResF3$pval[mmResF3$model==tyIerr$model[i]]<tyIerr$alpha[i])/sum(mmResF3$model==tyIerr$model[i])
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/sum(mmResF3$model==tyIerr$model[i]))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+
+totalRes <- tyIerr[tyIerr$alpha==5e-03,]
+totalRes$sigma_x <- paste0("sigma_x=",totalRes$sigma_x)
+totalRes$sigma_a <- paste0("sigma_a=",totalRes$sigma_a)
+
+pdf("typeIErr_7apr_5e03.pdf")
+ggplot(totalRes,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=alpha,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=0.005")))
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 29. Rerun some null simulations
+
+# called in batch:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/
+# qsub -q thornton.q -t 1-10 -N nullSims batch_null_simulations.sh
+
+# which saves res1.RData, res2.RData, ..., res10.RData
+# calls gx+ga, ga, gx, linear model for 4 combos of sigma_a, sigma_x \in 0.3, 0.5, sigma_e=1
+# 15K null snps each
+# saves the mm res and the var components estimates and cis
+
+# parse the results
+# resX = which sigma_x, sigma_a config
+# res2_X = which iteration
+
+## moved these results .RData files to nullSims_16ped/
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+totalRes <- NULL
+for(i in seq_len(10)){
+  dat <- getobj(paste0("res_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("res2_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("res3_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("res4_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+}
+
+dim(totalRes) # 2400000 13
+ftable(totalRes$model,totalRes$sigma_a,totalRes$sigma_x)
+#                0.3    0.5
+# auto   0.3  150000 150000
+#        0.5  150000 150000
+# both   0.3  150000 150000
+#        0.5  150000 150000
+# linear 0.3  150000 150000
+#        0.5  150000 150000
+# x      0.3  150000 150000
+#        0.5  150000 150000
+
+# great, so 150K of each type
+
+## make some plots
+library(ggplot2)
+tyIerr <- expand.grid(model=c("auto","both","x","linear"),alpha=c(5e-03,5e-04),
+                      sigma_x=c(0.5,0.3),sigma_a=c(0.5,0.3))
+tyIerr$est <- NA
+tyIerr$lower <- NA; tyIerr$upper <- NA
+for(i in seq_len(nrow(tyIerr))){
+  mmResF <- totalRes[totalRes$model==tyIerr$model[i]&totalRes$sigma_x==tyIerr$sigma_x[i]&
+                       totalRes$sigma_a==tyIerr$sigma_a[i],]
+  tyIerr$est[i] <- sum(mmResF$pval<tyIerr$alpha[i])/nrow(mmResF)
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/nrow(mmResF))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+# make the model an ordered factor so it prints both, x, auto, linear
+tyIerr$model <- ordered(tyIerr$model,levels=c("both","x","auto","linear"))
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-03,]
+
+pdf("typeIErr_5e03.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-03,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=0.005")))
+dev.off()
+
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-04,]
+
+pdf("typeIErr_5e04.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-04,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-04")))
+dev.off()
+
+## plot the var comp estimates for these
+cis_auto <- NULL
+cis_x <- NULL
+cis_both <- NULL
+for(i in seq_len(10)){
+  for(j in c("","2","3","4")){
+  dat <- getobj(paste0("res",j,"_",i,".RData"))
+  tosv <- dat[["ci_x"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","resid")
+
+  cis_x <- rbind(cis_x,tosv)
+
+  tosv <- dat[["ci_auto"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("auto","resid")
+  
+  cis_auto <- rbind(cis_auto,tosv)
+  
+  tosv <- dat[["ci_both"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","auto","resid")
+  
+  cis_both <- rbind(cis_both,tosv)
+}}
+
+# look at kc values comparing x to autos
+kinX <- get(load("500Peds_xKinship.RData"))
+kinAuto <- get(load("500Peds_autoKinship.RData"))
+
+kinAuto <- matrix(kinAuto,nrow=8000,ncol=8000)
+kinX <- matrix(kinX,nrow=8000,ncol=8000)
+
+summary(as.vector(kinAuto[1:16,1:16]))
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.0000  0.0000  0.1250  0.1353  0.2500  0.5000 
+summary(as.vector(kinX[1:16,1:16]))
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.0000  0.0000  0.1094  0.1787  0.2500  1.0000 
+summary(as.vector(kinX[1:16,1:16])-as.vector(kinAuto[1:16,1:16])) # mean is >0...
+#Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+#-0.25000  0.00000  0.00000  0.04346  0.12500  0.50000 
+
+sum(kinAuto[1:16,1:16]==0) # 70
+sum(kinX[1:16,1:16]==0) # 118
+sum(kinAuto[1:16,1:16]==0)/length(kinAuto[1:16,1:16]) # 0.2734375
+sum(kinX[1:16,1:16]==0)/length(kinAuto[1:16,1:16]) # 0.4609375
+# so xKC is 46% 0's and autoKC is only 27%
+
+plot(as.vector(kinX[1:16,1:16]),as.vector(kinAuto[1:16,1:16]),xlab="X KC",ylab="Auto KC")
+abline(0,1)
+dev.off()
+# looks like more smaller kc values, but not true from summary?
+
+cis_autoPl <- cis_auto[cis_auto$comp=="auto",]
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.3]) # 0.6990352; sum=0.6
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.5]) # 0.950669; sum=0.8
+
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.3]) # 0.8662233; sum=0.8
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.5]) # 1.130354; sum=1.0
+
+cis_xPl <- cis_x[cis_x$comp=="x",]
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.3]) # 0.447846; sum=0.6
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.5]) # 0.6360744; sum=0.8
+
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.3]) # 0.5244501; sum=0.8
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.5]) # 0.712929; sum=1.0
+
+# make histograms of the estimates of each var component, for each model type
+allCis <- rbind(cis_x,cis_auto,cis_both)
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.3&allCis$sigma_x==0.3,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_s2A03s2X03.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+ ggtitle("sigma^{2}_{x}=0.3, sigma^{2}_{a}=0.3") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.5&allCis$sigma_x==0.3,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_s2A05s2X03.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.3, sigma^{2}_{a}=0.5") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.3&allCis$sigma_x==0.5,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_s2A03s2X05.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.5, sigma^{2}_{a}=0.3") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.5&allCis$sigma_x==0.5,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_s2A05s2X05.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.5, sigma^{2}_{a}=0.5") + theme_bw()
+dev.off()
+
+# type I error is worst when ignoring the x chr effects
+# var comps are ok when ignorning the x chr effects
+
+# type I error is ok when only fitting x chr effects, but ignoring auto effects
+# var comps are underestimated when only fitting x chr effects, but ignoring auto effects
+
+rm(list=ls())
+
+
+#####
+# 30. Look at power graph zoomed in on x-axis
+
+source("powerGraph.R")
+
+totalRes <- get(load("pvals_power_results_ALL.RData"))
+dim(totalRes) # 4940976 12
+
+# be sure to exclude the NA rows.
+sum(is.na(totalRes$pval)) # 0
+
+ftable(totalRes$causal,totalRes$beta1,totalRes$model)
+#               auto   both      x
+# FALSE 0.03   75000  75000  75000
+# 0.05  326043 324437 326514
+# 0.06    7995   6142   8568
+# 0.07  378012 377618 378208
+# 0.08    8819   7158   9584
+# 0.09    7567   5548   8799
+# 0.1     8295   6293   9100
+# 0.13    8949   7242   9624
+# 0.15     994    994    994
+# 0.18    1000   1000   1000
+# 0.2     1000   1000   1000
+# 0.25     997    997    997
+# 0.3     1000   1000   1000
+# TRUE  0.03   75000  75000  75000
+# 0.05  326043 324437 326514
+# 0.06    7995   6142   8568
+# 0.07  378012 377618 378208
+# 0.08    8819   7158   9584
+# 0.09    7567   5548   8799
+# 0.1     8295   6293   9100
+# 0.13    8949   7242   9624
+# 0.15     994    994    994
+# 0.18    1000   1000   1000
+# 0.2     1000   1000   1000
+# 0.25     997    997    997
+# 0.3     1000   1000   1000
+
+powerGraph(totalRes,b=0.07,fn="power_3models_beta07_zoom.pdf",xlims=c(0,0.05))
+powerGraph(totalRes,b=0.05,fn="power_3models_beta05_zoom.pdf",xlims=c(0,0.05))
+
+rm(list=ls())
+
+
+#####
+# 31. Rerun power calculations
+
+# qsub -q thornton.q -t 1-2000 batch_model_c_powerCalc_function_005.sh
+# this will produce 10K iterations for each sigma_x, sigma_a value, beta1=0.05 from which to calculate power
+
+
+#####
+# 32. Simulate phenotypes with different pedigree structure
+
+## simulate some with x KC >> auto KC
+# mother-son, father-daughter relationships
+# full brothers
+# uncle-nephew, maternal
+
+# make autosomal and x chr KC matrices, for 8000 people = 1000x8 person pedigree
+# see script organize_kinship_matrices.R 
+# creates 1000Peds_8ped_xKinship.RData and 1000Peds_8ped_autoKinship.RData
+
+# now see what the type I error and var comp estimates look like
+# called in batch:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/
+# qsub -q olga.q -t 1-10 -N nullSims batch_null_simulations.sh
+# which calls null_simulations_v2.R (pedigree is different)
+
+## moved these results to nullSims_8ped/
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+kinX <- getobj("1000Peds_8ped_xKinship.RData")
+kinAuto <- getobj("1000Peds_8ped_autoKinship.RData")
+
+kinAuto <- matrix(kinAuto,nrow=8000,ncol=8000)
+kinX <- matrix(kinX,nrow=8000,ncol=8000)
+
+summary(as.vector(kinX[1:8,1:8]))
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.0000  0.0000  0.2500  0.3438  0.5000  1.0000 
+
+summary(as.vector(kinAuto[1:8,1:8]))
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#0.000   0.125   0.250   0.207   0.250   0.500
+
+summary(as.vector(kinX[1:8,1:8])-as.vector(kinAuto[1:8,1:8])) # mean is >0...
+#Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#-0.2500  0.0000  0.1250  0.1367  0.2500  0.5000 
+
+kinAuto[1:8,1:8]
+kinX[1:8,1:8]
+
+sum(kinAuto[1:8,1:8]==0) # 10
+sum(kinX[1:8,1:8]==0) # 18
+
+plot(as.vector(kinX[1:8,1:8]),as.vector(kinAuto[1:8,1:8]),xlab="X KC",ylab="Auto KC")
+abline(0,1)
+dev.off()
+# looks like x kc is larger...
+
+totalRes <- NULL
+for(i in seq_len(10)){
+  dat <- getobj(paste0("nullSims_8ped/res_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped/res2_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped/res3_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped/res4_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+}
+
+dim(totalRes) # 2400000 13
+ftable(totalRes$model,totalRes$sigma_a,totalRes$sigma_x)
+#                0.3    0.5
+# auto   0.3  150000 150000
+#        0.5  150000 150000
+# both   0.3  150000 150000
+#        0.5  150000 150000
+# linear 0.3  150000 150000
+#        0.5  150000 150000
+# x      0.3  150000 150000
+#        0.5  150000 150000
+
+# great, so 150K of each type
+
+## make some plots
+library(ggplot2)
+tyIerr <- expand.grid(model=c("auto","both","x","linear"),alpha=c(5e-03,5e-04),
+                      sigma_x=c(0.5,0.3),sigma_a=c(0.5,0.3))
+tyIerr$est <- NA
+tyIerr$lower <- NA; tyIerr$upper <- NA
+for(i in seq_len(nrow(tyIerr))){
+  mmResF <- totalRes[totalRes$model==tyIerr$model[i]&totalRes$sigma_x==tyIerr$sigma_x[i]&
+                       totalRes$sigma_a==tyIerr$sigma_a[i],]
+  tyIerr$est[i] <- sum(mmResF$pval<tyIerr$alpha[i])/nrow(mmResF)
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/nrow(mmResF))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+# make the model an ordered factor so it prints both, x, auto, linear
+tyIerr$model <- ordered(tyIerr$model,levels=c("both","x","auto","linear"))
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-03,]
+
+pdf("typeIErr_8ped_5e03.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-03,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=0.005")))
+dev.off()
+
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-04,]
+
+pdf("typeIErr_8ped_5e04.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-04,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-04")))
+dev.off()
+
+## plot the var comp estimates for these
+cis_auto <- NULL
+cis_x <- NULL
+cis_both <- NULL
+for(i in seq_len(10)){
+  for(j in c("","2","3","4")){
+    dat <- getobj(paste0("nullSims_8ped/res",j,"_",i,".RData"))
+    tosv <- dat[["ci_x"]]
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("x","resid")
+    
+    cis_x <- rbind(cis_x,tosv)
+    
+    tosv <- dat[["ci_auto"]]  
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("auto","resid")
+    
+    cis_auto <- rbind(cis_auto,tosv)
+    
+    tosv <- dat[["ci_both"]]  
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("x","auto","resid")
+    
+    cis_both <- rbind(cis_both,tosv)
+  }}
+
+cis_autoPl <- cis_auto[cis_auto$comp=="auto",]
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.3]) # 0.6817052; sum=0.6
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.5]) # 0.9328929; sum=0.8
+
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.3]) # 0.8571642; sum=0.8
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.5]) # 1.106899; sum=1.0
+
+cis_autoPl <- cis_auto[cis_auto$comp=="resid",]
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.3]) # 1.070525; true=1.0
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.5]) # 1.108168; true=1.0
+
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.3]) # 1.073937; true=1.0
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.5]) # 1.112177; true=1.0
+
+
+
+cis_xPl <- cis_x[cis_x$comp=="x",]
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.3]) # 0.4301809; sum=0.6
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.5]) # 0.6184052; sum=0.8
+
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.3]) # 0.4965284; sum=0.8
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.5]) # 0.6948854; sum=1.0
+
+cis_xPl <- cis_x[cis_x$comp=="resid",]
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.3]) # 1.036361; true=1.0
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.5]) # 1.037935; true=1.0
+
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.3]) # 1.069274; true=1.0
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.5]) # 1.062538; true=1.0
+
+
+
+cis_bothPl <- cis_both[cis_both$comp=="x",]
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.3]) # 0.3358279; true=0.3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.5]) # 0.5062398; true=0.5
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.3]) # 0.3241463; true=0.3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.5]) # 0.5173022; true=0.5
+
+cis_bothPl <- cis_both[cis_both$comp=="auto",]
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.3]) # 0.2394941; true=0.3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.5]) # 0.2912639; true=0.3
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.3]) # 0.4447845; true=0.5
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.5]) # 0.4630382; true=0.5
+
+cis_bothPl <- cis_both[cis_both$comp=="resid",]
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.3]) # 1.000223; true=1.0
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.5]) # 0.9922439; true=1.0
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.3]) # 1.000157; true=1.0
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.5]) # 0.9894086; true=1.0
+
+
+# make histograms of the estimates of each var component, for each model type
+allCis <- rbind(cis_x,cis_auto,cis_both)
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.3&allCis$sigma_x==0.3,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A03s2X03.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.3, sigma^{2}_{a}=0.3") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.5&allCis$sigma_x==0.3,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A05s2X03.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.3, sigma^{2}_{a}=0.5") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.3&allCis$sigma_x==0.5,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A03s2X05.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^2[x]=0.5, sigma^2[a]=0.3") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.5&allCis$sigma_x==0.5,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A05s2X05.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.5, sigma^{2}_{a}=0.5") + theme_bw()
+dev.off()
+
+# var comps are ok when ignorning the x chr effects
+# type I error is worst when ignoring the x chr effects
+
+# var comps are underestimated when only fitting x chr effects, but ignoring auto effects
+# type I error is ok when only fitting x chr effects, but ignoring auto effects
+
+rm(list=ls())
+
+
+#####
+# 33. Look at new power results
+
+#modelC_results_power_sA03sX03
+#modelC_results_power_sA05sX03
+#modelC_results_power_sA03sX05
+#modelC_results_power_sA05sX05/mmRes_SNP1992_beta0.05.RData
+
+# called from batch:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/olga_application
+# qsub -q thornton.q -N readRes batch_read_results.sh
+
+source("powerGraph.R")
+
+dat <- get(load("pvals_newPower_results_apr10.RData"))
+newcs <- get(load("pvals_newPower_results_apr14.RData"))
+dat <- rbind(dat,newcs)
+dim(dat) # 493350 14
+table(dat$beta1) # 480K 0.05, 13350 0.07
+dat <- dat[dat$beta1==0.05,]
+
+toPl <- dat[dat$sigma_x=="03"&dat$sigma_a=="03"&!is.na(dat$pval),]
+dim(toPl) # 120000 14
+table(toPl$causal) # 60000 true
+sa3sx3=powerGraph(toPl,b=0.05,fn="powerGraph_sA03sX03.pdf",xlims=c(0,0.05),values=TRUE)
+sa3sx3$sigma_a=paste0("sigma_a=",0.3)
+sa3sx3$sigma_x=paste0("sigma_x=",0.3)
+
+toPl <- dat[dat$sigma_x=="03"&dat$sigma_a=="05"&!is.na(dat$pval),]
+dim(toPl) # 120K 14
+table(toPl$causal) # 60K true
+sa5sx3=powerGraph(toPl,b=0.05,fn="powerGraph_sA05sX03.pdf",xlims=c(0,0.05),values=TRUE)
+sa5sx3$sigma_a=paste0("sigma_a=",0.5)
+sa5sx3$sigma_x=paste0("sigma_x=",0.3)
+
+toPl <- dat[dat$sigma_x=="05"&dat$sigma_a=="03"&!is.na(dat$pval),]
+dim(toPl) # 120K 14
+table(toPl$causal) # 60K
+sa3sx5=powerGraph(toPl,b=0.05,fn="powerGraph_sA03sX05.pdf",xlims=c(0,0.05),values=TRUE)
+sa3sx5$sigma_a=paste0("sigma_a=",0.3)
+sa3sx5$sigma_x=paste0("sigma_x=",0.5)
+
+toPl <- dat[dat$sigma_x=="05"&dat$sigma_a=="05"&!is.na(dat$pval),]
+dim(toPl) # 120K 14
+table(toPl$causal) # 60K t
+sa5sx5=powerGraph(toPl,b=0.05,fn="powerGraph_sA05sX05.pdf",xlims=c(0,0.05),values=TRUE)
+sa5sx5$sigma_a=paste0("sigma_a=",0.5)
+sa5sx5$sigma_x=paste0("sigma_x=",0.5)
+
+library(ggplot2); library(reshape)
+tot <- rbind(sa3sx3,sa3sx5,sa5sx3,sa5sx5)
+tot$x_fp_rate <- tot$x_fp/tot$xiter
+tot$x_tp_rate <- tot$x_tp/tot$xiter
+tot$auto_fp_rate <- tot$auto_fp/tot$autoiter
+tot$auto_tp_rate <- tot$auto_tp/tot$autoiter
+tot$both_fp_rate <- tot$both_fp/tot$bothiter
+tot$both_tp_rate <- tot$both_tp/tot$bothiter
+
+both <- tot[,c("sigma_a","sigma_x","both_fp_rate","both_tp_rate")]
+both$model <- "both"
+both$fp <- both$both_fp_rate
+both$tp <- both$both_tp_rate
+
+auto <- tot[,c("sigma_a","sigma_x","auto_fp_rate","auto_tp_rate")]
+auto$model <- "auto"
+auto$fp <- auto$auto_fp_rate
+auto$tp <- auto$auto_tp_rate
+
+x <- tot[,c("sigma_a","sigma_x","x_fp_rate","x_tp_rate")]
+x$model <- "x"
+x$fp <- x$x_fp_rate
+x$tp <- x$x_tp_rate
+
+toPl <- rbind(x[,c("sigma_x","sigma_a","model","tp","fp")],
+              auto[,c("sigma_x","sigma_a","model","tp","fp")],
+              both[,c("sigma_x","sigma_a","model","tp","fp")])
+
+toPl <- toPl[toPl$fp<=0.05,]
+
+pdf("power_beta05.pdf")
+ggplot(toPl,aes(x=fp,y=tp,color=model)) + geom_line(size=1.5,aes(linetype=model)) + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  ylab("True Positive Rate") + xlab("False Positive Rate") +ggtitle(expression(paste(beta,"=0.05")))
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 34. New null simulations with extreme sigma values
+
+# now see what the type I error and var comp estimates look like
+# called in batch:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/
+# qsub -q olga.q -t 1-10 -N nullSims batch_null_simulations.sh
+# which calls null_simulations_v3.R (pedigree is different)
+
+## moved these results to nullSims_8ped/
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+totalRes <- NULL
+for(i in seq_len(10)){
+  dat <- getobj(paste0("nullSims_8ped/res_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped/res2_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped/res3_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped/res4_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+
+  dat <- getobj(paste0("nullSims_8ped/extreme_sigma/res_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped/extreme_sigma/res2_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+}
+
+save(totalRes,file="nullSims_8ped/mmRes_nullSims.RData")
+
+dim(totalRes) # 3600000 13
+ftable(totalRes$model,totalRes$sigma_a,totalRes$sigma_x)
+#               0.3    0.5      3
+# auto   0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+# both   0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+# linear 0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+# x      0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+
+# great, so 150K of each type
+
+## make some plots
+library(ggplot2)
+tyIerr <- expand.grid(model=c("auto","both","x","linear"),alpha=c(5e-03,5e-04),
+                      sigma_x=c(3,0.5,0.3),sigma_a=c(3,0.5,0.3))
+tyIerr$est <- NA
+tyIerr$lower <- NA; tyIerr$upper <- NA
+for(i in seq_len(nrow(tyIerr))){
+  mmResF <- totalRes[totalRes$model==tyIerr$model[i]&totalRes$sigma_x==tyIerr$sigma_x[i]&
+                       totalRes$sigma_a==tyIerr$sigma_a[i],]
+  tyIerr$est[i] <- sum(mmResF$pval<tyIerr$alpha[i])/nrow(mmResF)
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/nrow(mmResF))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+# make the model an ordered factor so it prints both, x, auto, linear
+tyIerr$model <- ordered(tyIerr$model,levels=c("both","x","auto","linear"))
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-03,]
+
+pdf("typeIErr_8ped_5e03_inclExtreme.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-03,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=0.005")))
+dev.off()
+
+
+## plot the var comp estimates for these
+cis_auto <- NULL
+cis_x <- NULL
+cis_both <- NULL
+for(i in seq_len(10)){
+  for(j in c("res","res2","res3","res4","extreme_sigma/res","extreme_sigma/res2")){
+    dat <- getobj(paste0("nullSims_8ped/",j,"_",i,".RData"))
+    tosv <- dat[["ci_x"]]
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("x","resid")
+    
+    cis_x <- rbind(cis_x,tosv)
+    
+    tosv <- dat[["ci_auto"]]  
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("auto","resid")
+    
+    cis_auto <- rbind(cis_auto,tosv)
+    
+    tosv <- dat[["ci_both"]]  
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("x","auto","resid")
+    
+    cis_both <- rbind(cis_both,tosv)
+  }}
+
+vi <- get(load("varEst_newPower_results_apr10.RData"))
+
+vi$comp <- NA
+vi$comp[vi$model=="auto"] <- rep(c("auto","resid"),times=sum(vi$model=="auto")/2)
+vi$comp[vi$model=="x"] <- rep(c("x","resid"),times=sum(vi$model=="x")/2)
+vi$comp[vi$model=="both"] <- rep(c("x","auto","resid"),times=sum(vi$model=="both")/3)
+
+vi$sigma_a[vi$sigma_a=="03"] <- 0.3
+vi$sigma_x[vi$sigma_x=="03"] <- 0.3
+vi$sigma_a[vi$sigma_a=="05"] <- 0.5
+vi$sigma_x[vi$sigma_x=="05"] <- 0.5
+
+cis_both <- rbind(cis_both,vi[vi$model=="both",c("Est","Lower 95","Upper 95","model","sigma_a","sigma_x","comp")])
+cis_x <- rbind(cis_x,vi[vi$model=="x",c("Est","Lower 95","Upper 95","model","sigma_a","sigma_x","comp")])
+cis_auto <- rbind(cis_auto,vi[vi$model=="auto",c("Est","Lower 95","Upper 95","model","sigma_a","sigma_x","comp")])
+
+cis <- list("cis_x"=cis_x,"cis_auto"=cis_auto,"cis_both"=cis_both)
+save(cis,file="nullSims_8ped/varCompCIs_nullSims.RData")
+
+ftable(cis_auto$comp,cis_auto$sigma_a,cis_auto$sigma_x)
+#              0.3   0.5     3
+# auto  0.3  10010 10010    10
+#       0.5  10010 10010     0
+#       3       10     0     0
+# resid 0.3  10010 10010    10
+#       0.5  10010 10010     0
+#       3       10     0     0
+
+cis_autoPl <- cis_auto[cis_auto$comp=="auto",]
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.3]) # 0.6817052; sum=0.6
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.5]) # 0.9328929; sum=0.8
+
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.3]) # 0.8571642; sum=0.8
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.5]) # 1.106899; sum=1.0
+
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==3]) # 3.705486; sum=3.3
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==3&cis_autoPl$sigma_x==0.3]) # 3.262381; sum=3.3
+
+
+cis_autoPl <- cis_auto[cis_auto$comp=="resid",]
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.3]) # 1.070525; true=1.0
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==0.5]) # 1.108168; true=1.0
+
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.3]) # 1.073937; true=1.0
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.5&cis_autoPl$sigma_x==0.5]) # 1.112177; true=1.0
+
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==0.3&cis_autoPl$sigma_x==3]) # 1.806813; true=1.0
+mean(cis_autoPl$Est[cis_autoPl$sigma_a==3&cis_autoPl$sigma_x==0.3]) # 1.106329; true=1.0
+
+
+
+cis_xPl <- cis_x[cis_x$comp=="x",]
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.3]) # 0.4301809; sum=0.6
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.5]) # 0.6184052; sum=0.8
+
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.3]) # 0.4965284; sum=0.8
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.5]) # 0.6948854; sum=1.0
+
+mean(cis_xPl$Est[cis_xPl$sigma_a==3&cis_xPl$sigma_x==0.3]) # 1.404451; sum=3.3
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==3]) # 3.093944; sum=3.3
+
+
+cis_xPl <- cis_x[cis_x$comp=="resid",]
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.3]) # 1.036361; true=1.0
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==0.5]) # 1.037935; true=1.0
+
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.3]) # 1.069274; true=1.0
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.5&cis_xPl$sigma_x==0.5]) # 1.062538; true=1.0
+
+mean(cis_xPl$Est[cis_xPl$sigma_a==0.3&cis_xPl$sigma_x==3]) # 1.035329; true=1.0
+mean(cis_xPl$Est[cis_xPl$sigma_a==3&cis_xPl$sigma_x==0.3]) # 1.49195; true=1.0
+
+
+ftable(cis_both$comp,cis_both$sigma_a,cis_both$sigma_x)
+#              0.3   0.5     3
+# auto  0.3  10010 10010    10
+#       0.5  10010 10010     0
+#       3       10     0     0
+# resid 0.3  10010 10010    10
+#       0.5  10010 10010     0
+#       3       10     0     0
+# x     0.3  10010 10010    10
+#       0.5  10010 10010     0
+#       3       10     0     0
+
+cis_bothPl <- cis_both[cis_both$comp=="x",]
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.3]) # 0.300924; true=0.3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.5]) # 0.5008091; true=0.5
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.3]) # 0.3008164; true=0.3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.5]) # 0.5022274; true=0.5
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==3]) # 2.997379; true=3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==3&cis_bothPl$sigma_x==0.3]) # 0.3256127; true=0.3
+
+cis_bothPl <- cis_both[cis_both$comp=="auto",]
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.3]) # 0.304379; true=0.3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.5]) # 0.2984428; true=0.3
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.3]) # 0.5038336; true=0.5
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.5]) # 0.4988112; true=0.5
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==3]) # 0.2634433; true=0.3
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==3&cis_bothPl$sigma_x==0.3]) # 2.899841; true=3
+
+cis_bothPl <- cis_both[cis_both$comp=="resid",]
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.3]) # 0.9984585; true=1.0
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==0.5]) # 1.000878; true=1.0
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.3]) # 0.9995569; true=1.0
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.5&cis_bothPl$sigma_x==0.5]) # 1.000251; true=1.0
+
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==0.3&cis_bothPl$sigma_x==3]) # 0.9909418; true=1.0
+mean(cis_bothPl$Est[cis_bothPl$sigma_a==3&cis_bothPl$sigma_x==0.3]) # 1.013769; true=1.0
+
+
+# make histograms of the estimates of each var component, for each model type
+allCis <- rbind(cis_x,cis_auto,cis_both)
+
+# first plot all sigma_resid, since true value is always=1
+justE <- allCis[allCis$comp=="resid",]
+dim(justE) # 180 7
+justE$ind <- 1:nrow(justE)
+justE$sigma_a <- paste0("sigma_a=",justE$sigma_a)
+justE$sigma_x <- paste0("sigma_x=",justE$sigma_x)
+justE$params <- paste(justE$sigma_a,justE$sigma_x,sep=", ")
+
+pdf("sigma_e_estimates.pdf",width=11,height=9)
+ggplot(justE,aes(x=ind,y=Est,color=model)) +geom_point(aes(shape=params)) +
+  geom_hline(yintercept=1) + xlab("Iteration") + ylab("Estimate") + theme_bw()
+dev.off()
+
+# now plot sigma_a; exclude the extremes
+justA <- allCis[allCis$comp=="auto"&!is.element(allCis$sigma_a,3)&!is.element(allCis$sigma_x,3),]
+dim(justA) # 80 7
+justA <- justA[order(justA$model,justA$sigma_a,justA$sigma_x),]
+justA$ind <- 1:nrow(justA)
+justA$sa <- justA$sigma_a
+justA$sigma_a <- paste0("sigma_a=",justA$sigma_a)
+justA$sigma_x <- paste0("sigma_x=",justA$sigma_x)
+justA$params <- paste(justA$sigma_a,justA$sigma_x,sep=", ")
+
+pdf("sigma_a_estimates.pdf",width=11,height=9)
+ggplot(justA,aes(x=ind,y=Est,color=model)) +geom_point() + ggtitle(bquote(sigma[a]^{2}~Estimates)) +
+   xlab("Iteration") + ylab("Estimate") + theme_bw() + facet_grid(sigma_x~sigma_a) + 
+  geom_hline(aes(yintercept=sa))
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.3&allCis$sigma_x==0.3,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A03s2X03.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.3, sigma^{2}_{a}=0.3") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.5&allCis$sigma_x==0.3,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A05s2X03.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.3, sigma^{2}_{a}=0.5") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.3&allCis$sigma_x==0.5,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A03s2X05.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^2[x]=0.5, sigma^2[a]=0.3") + theme_bw()
+dev.off()
+
+allCisPl <- allCis[!is.element(allCis$comp,"resid")&allCis$sigma_a==0.5&allCis$sigma_x==0.5,]
+allCisPl$model[is.element(allCisPl$model,c("x","auto"))] <- "one comp"
+allCisPl$comp[allCisPl$comp=="auto"] <- "sigma^2_a"
+allCisPl$comp[allCisPl$comp=="x"] <- "sigma^2_x"
+pdf("hist_varComp_8ped_s2A05s2X05.pdf")
+ggplot(allCisPl,aes(x=Est)) + geom_histogram() + facet_grid(model~comp) +
+  ggtitle("sigma^{2}_{x}=0.5, sigma^{2}_{a}=0.5") + theme_bw()
+dev.off()
+
+# var comps are ok when ignorning the x chr effects
+# type I error is worst when ignoring the x chr effects
+
+# var comps are underestimated when only fitting x chr effects, but ignoring auto effects
+# type I error is ok when only fitting x chr effects, but ignoring auto effects
+
+rm(list=ls())
+
+
+#####
+# 35. Boxplots of var comp estimates
+
+# added new iterations:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x
+# qsub -t 1-100 -N nullSims batch_null_simulations.sh
+# which calls null_simulations_v4.R 
+# pheno only has g_a effects, and sigma values are extreme
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+cis <- getobj("nullSims_8ped/varCompCIs_nullSims.RData")
+
+newcs <- getobj("varEst_newPower_results_apr14.RData")
+dim(newcs); head(newcs) # 295575 7
+
+newcs$sigma_x[newcs$sigma_x=="03"] <- 0.3
+newcs$sigma_x[newcs$sigma_x=="05"] <- 0.5
+newcs$sigma_a[newcs$sigma_a=="03"] <- 0.3
+newcs$sigma_a[newcs$sigma_a=="05"] <- 0.5
+
+cib <- newcs[newcs$model=="both",]
+cix <- newcs[newcs$model=="x",]
+cia <- newcs[newcs$model=="auto",]
+
+cib$comp <- rep(c("x","auto","resid"),times=nrow(cib)/3)
+cix$comp <- rep(c("x","resid"),times=nrow(cix)/2)
+cia$comp <- rep(c("auto","resid"),times=nrow(cia)/2)
+
+head(cis[[1]])
+cis[[1]] <- rbind(cis[[1]],cix[,c("Est","Lower 95","Upper 95","model","sigma_a","sigma_x","comp")])
+
+head(cis[[2]])
+cis[[2]] <- rbind(cis[[2]],cia[,c("Est","Lower 95","Upper 95","model","sigma_a","sigma_x","comp")])
+
+head(cis[[3]])
+cis[[3]] <- rbind(cis[[3]],cib[,c("Est","Lower 95","Upper 95","model","sigma_a","sigma_x","comp")])
+
+sapply(cis,dim)
+#cis_x cis_auto cis_both
+#[1,] 164570   164570   246855
+#[2,]      7        7        7
+
+save(cis,file="varCompCIs.RData")
+
+library(ggplot2)
+cis <- getobj("nullSims_8ped/varCompCIs_nullSims.RData")
+cib <- cis[["cis_both"]]
+head(cib)
+# exclude the extreme values
+
+cib <- cib[!is.element(cib$sigma_a,3)&!is.element(cib$sigma_x,3),]
+cib$sigma_a <- paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x <- paste0("sigma_x=",cib$sigma_x)
+cib$comp <- ordered(cib$comp,levels=c("auto","x","resid"))
+ftable(cib$comp,cib$sigma_a,cib$sigma_x)
+#                    sigma_x=0.3 sigma_x=0.5
+# auto  sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# x     sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# resid sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+
+# so 10K iterations of each composition
+# add in mean for each component
+mns <- expand.grid(comp=c("auto","x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                         sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("auto","x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+
+pdf("boxplots_varComp_bothEst.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  geom_hline(yintercept=c(0.3,0.5),color="gray",linetype=2) + xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 10K Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+
+## 
+cib <- cis[["cis_auto"]]
+head(cib)
+# exclude the extreme values
+
+cib <- cib[!is.element(cib$sigma_a,3)&!is.element(cib$sigma_x,3),]
+cib$sigma_a <- paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x <- paste0("sigma_x=",cib$sigma_x)
+cib$comp <- ordered(cib$comp,levels=c("auto","resid"))
+ftable(cib$comp,cib$sigma_a,cib$sigma_x)
+#                    sigma_x=0.3 sigma_x=0.5
+# auto  sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# resid sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# so 10K iterations of each composition
+# add in mean for each component
+
+mns <- expand.grid(comp=c("auto","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("auto","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+
+pdf("boxplots_varComp_autoEst.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 10K Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+
+## 
+cib <- cis[["cis_x"]]
+head(cib)
+# exclude the extreme values
+
+cib <- cib[!is.element(cib$sigma_a,3)&!is.element(cib$sigma_x,3),]
+cib$sigma_a <- paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x <- paste0("sigma_x=",cib$sigma_x)
+cib$comp <- ordered(cib$comp,levels=c("x","resid"))
+ftable(cib$comp,cib$sigma_a,cib$sigma_x)
+#                    sigma_x=0.3 sigma_x=0.5
+# x     sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# resid sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# so 10K iterations of each composition
+# add in mean for each component
+
+mns <- expand.grid(comp=c("x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_xEst.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 10K Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+##
+# look at the difference between the truth and mean estimate, for the different scenarios
+# when only fitting the AUTO effect:
+# sX=0.3, difference=
+# sX=0.5, difference=
+# so about 1/3 increase
+
+# when only fitting the X effect:
+# sA=0.3, difference=
+# xA=0.5, difference=
+# so about 1/2 decrease
+
+rm(list=ls())
+
+
+#####
+# 36. Add new null sims to var comp estimates
+
+# called in batch:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/
+# qsub -q olga.q -t 1-100 -N nullSims batch_null_simulations.sh
+# which calls null_simulations_v2.R (pedigree is different)
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+totalRes <- NULL
+fns <- list.files(pattern=".RData")
+resFn <- substr(fns,1,3)
+fns <- fns[resFn=="res"]
+for(i in fns){
+  dat <- getobj(i)
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+}
+
+oldR <- getobj("nullSims_8ped/mmRes_nullSims.RData")
+tR <- rbind(oldR,totalRes)
+
+dim(tR) # 3600000 13
+ftable(tR$model,tR$sigma_a,tR$sigma_x)
+#               0.3    0.5      3
+# auto   0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+# both   0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+# linear 0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+# x      0.3  150000 150000 150000
+# 0.5  150000 150000      0
+# 3    150000      0      0
+
+# with these values we can calculate type I error rate
+save(tR,file="nullSims_8ped/mmRes_nullSims_v2.RData")
+
+cis_auto <- NULL
+cis_x <- NULL
+cis_both <- NULL
+for(i in fns){
+    dat <- getobj(i)
+    tosv <- dat[["ci_x"]]
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("x","resid")
+    
+    cis_x <- rbind(cis_x,tosv)
+    
+    tosv <- dat[["ci_auto"]]  
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("auto","resid")
+    
+    cis_auto <- rbind(cis_auto,tosv)
+    
+    tosv <- dat[["ci_both"]]  
+    tosv$sigma_a <- dat[["sigma_auto"]]
+    tosv$sigma_x <- dat[["sigma_x"]]
+    tosv$comp <- c("x","auto","resid")
+    
+    cis_both <- rbind(cis_both,tosv)
+  }
+
+oldC <- get(load("nullSims_8ped/varCompCIs_nullSims.RData"))
+
+oldC[["cis_x"]] <- rbind(oldC[["cis_x"]],cis_x)
+oldC[["cis_auto"]] <- rbind(oldC[["cis_auto"]],cis_auto)
+oldC[["cis_both"]] <- rbind(oldC[["cis_both"]],cis_both)
+
+sum(duplicated(oldC[["cis_x"]]$Est)) # 6
+sum(duplicated(oldC[["cis_auto"]]$Est)) # 6
+sum(duplicated(oldC[["cis_both"]]$Est)) # 9
+
+cisx <- oldC[["cis_x"]]
+dim(cisx) # 80804 7
+oldC[["cis_x"]] <- cisx[!duplicated(cisx$Est),]
+dim(oldC[["cis_x"]]) # 80798 7
+
+cis <- oldC[["cis_auto"]]
+dim(cis) # 80804 7
+oldC[["cis_auto"]] <- cis[!duplicated(cis$Est),]
+dim(oldC[["cis_auto"]]) # 80798 7
+
+cis <- oldC[["cis_both"]]
+dim(cis) # 121206 7
+oldC[["cis_both"]] <- cis[!duplicated(cis$Est),]
+dim(oldC[["cis_both"]]) # 121197 7
+
+save(oldC,file="nullSims_8ped/varCompCIs_nullSims_v2.RData")
+
+rm(list=ls())
+
+
+#####
+# 37. Process simulations excl g_x term
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+totalRes <- NULL
+fn <- list.files("nullSims_8ped_exclgX/")
+for(i in 1:length(fn)){
+  dat <- getobj(paste0("nullSims_8ped_exclgX/",fn[i]))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+}
+
+save(totalRes,file="nullSims_8ped_exclgX/mmRes_nullSims.RData")
+dim(totalRes) # 11700000 13
+table(totalRes$causal) # all F
+ftable(totalRes$model,totalRes$sigma_a,totalRes$sigma_x)
+#0.3       3
+#auto   0.3        0 1500000
+#3    1425000       0
+#both   0.3        0 1500000
+#3    1425000       0
+#linear 0.3        0 1500000
+#3    1425000       0
+#x      0.3        0 1500000
+#3    1425000       0
+
+# so only the extreme values
+# check type I error quickly
+sum(totalRes$pval[totalRes$model=="auto"]<5e-05)/sum(totalRes$model=="auto") 
+sum(totalRes$pval[totalRes$model=="both"]<5e-05)/sum(totalRes$model=="both")
+sum(totalRes$pval[totalRes$model=="x"]<5e-05)/sum(totalRes$model=="x")
+sum(totalRes$pval[totalRes$model=="linear"]<5e-05)/sum(totalRes$model=="linear")
+
+tyIerr <- expand.grid(model=c("auto","both","x","linear"),alpha=c(5e-04,5e-05),
+                      sigma_x=c(3,0.3),sigma_a=c(3,0.3))
+tyIerr$est <- NA
+tyIerr$lower <- NA; tyIerr$upper <- NA
+for(i in seq_len(nrow(tyIerr))){
+  mmResF <- totalRes[totalRes$model==tyIerr$model[i]&totalRes$sigma_x==tyIerr$sigma_x[i]&
+                       totalRes$sigma_a==tyIerr$sigma_a[i],]
+  tyIerr$est[i] <- sum(mmResF$pval<tyIerr$alpha[i])/nrow(mmResF)
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/nrow(mmResF))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- NULL # doesn't include sigma_x in the phenotype
+
+# make the model an ordered factor so it prints both, x, auto, linear
+tyIerr$model <- ordered(tyIerr$model,levels=c("both","x","auto","linear"))
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-05&!is.nan(tyIerr$est),]
+
+pdf("typeIErr_8ped_5e05_exclgX.pdf",width=11)
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  facet_wrap(~sigma_a) +
+  ylab("Type I Error Rate, 1.5M Iterations, Pheno Excl g_X Term") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-05&!is.nan(tyIerr$est)&!is.element(tyIerr$model,"linear"),]
+pdf("typeIErr_8ped_5e05_exclgX_zoom.pdf",width=11)
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  facet_wrap(~sigma_a) +
+  ylab("Type I Error Rate, 1.5M Iterations, Pheno Excl g_X Term") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+##
+cis_auto <- NULL
+cis_x <- NULL
+cis_both <- NULL
+for(i in 1:length(fn)){
+  dat <- getobj(paste0("nullSims_8ped_exclgX/",fn[i]))
+  tosv <- dat[["ci_x"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","resid")
+  
+  cis_x <- rbind(cis_x,tosv)
+  
+  tosv <- dat[["ci_auto"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("auto","resid")
+  
+  cis_auto <- rbind(cis_auto,tosv)
+  
+  tosv <- dat[["ci_both"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","auto","resid")
+  
+  cis_both <- rbind(cis_both,tosv)
+}
+
+cis <- list("cis_x"=cis_x,"cis_auto"=cis_auto,"cix_both"=cis_both)
+save(cis,file="nullSims_8ped_exclgX/varCompCIs_nullSims.RData")
+
+rm(list=ls())
+
+
+#####
+# 38. Null simulations with different 8 person pedigree
+
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x
+# qsub -t 1-250 batch_null_simulations.sh
+# which calls null_simulations_v5.R, calls with new pedigree file xKC<=autoKC
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+fn <- list.files("nullSims_8ped_fem/")
+length(fn) # 826
+
+cis_auto <- NULL
+cis_x <- NULL
+cis_both <- NULL
+for(i in 1:length(fn)){
+  dat <- getobj(paste0("nullSims_8ped_fem/",fn[i]))
+  tosv <- dat[["ci_x"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","resid")
+  
+  cis_x <- rbind(cis_x,tosv)
+  
+  tosv <- dat[["ci_auto"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("auto","resid")
+  
+  cis_auto <- rbind(cis_auto,tosv)
+  
+  tosv <- dat[["ci_both"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","auto","resid")
+  
+  cis_both <- rbind(cis_both,tosv)
+}
+
+cis <- list("cis_x"=cis_x,"cis_auto"=cis_auto,"cis_both"=cis_both)
+save(cis,file="nullSims_8ped_fem/varCompCIs_nullSims.RData")
+
+res1 <- fn[substr(fn,1,4)=="res_"]
+res2 <- fn[substr(fn,1,5)=="res2_"]
+res3 <- fn[substr(fn,1,5)=="res3_"]
+res4 <- fn[substr(fn,1,5)=="res4_"]
+totalRes <- NULL
+# read in first 25 iters of res, res2, res3, res4
+for(i in 1:25){ 
+  dat <- getobj(paste0("nullSims_8ped_fem/",res1[i]))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped_fem/",res2[i]))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped_fem/",res3[i]))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_8ped_fem/",res4[i]))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+}
+
+dim(totalRes) # 6000000 13
+ftable(totalRes$model,totalRes$sigma_a,totalRes$sigma_x) # 375K for each config
+
+save(totalRes,file="nullSims_8ped_fem/mmRes_nullSims.RData")
+
+tyIerr <- expand.grid(model=c("auto","both","x","linear"),alpha=c(5e-04,5e-05),
+                      sigma_x=c(0.5,0.3),sigma_a=c(0.5,0.3))
+tyIerr$est <- NA
+tyIerr$lower <- NA; tyIerr$upper <- NA
+for(i in seq_len(nrow(tyIerr))){
+  mmResF <- totalRes[totalRes$model==tyIerr$model[i]&totalRes$sigma_x==tyIerr$sigma_x[i]&
+                       totalRes$sigma_a==tyIerr$sigma_a[i],]
+  tyIerr$est[i] <- sum(mmResF$pval<tyIerr$alpha[i])/nrow(mmResF)
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/nrow(mmResF))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+# make the model an ordered factor so it prints both, x, auto, linear
+tyIerr$model <- ordered(tyIerr$model,levels=c("both","x","auto","linear"))
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-05&!is.nan(tyIerr$est),]
+
+pdf("typeIErr_8ped_fem_5e05.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate, 375K Iterations") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-05&!is.nan(tyIerr$est)&!is.element(tyIerr$model,"linear"),]
+pdf("typeIErr_8ped_fem_5e05_zoom.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate, 375K Iterations") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 39. Var comp estimates for 8 person pedigree (fem)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+library(GWASTools); library(ggplot2)
+
+cis <- getobj("nullSims_8ped_fem/varCompCIs_nullSims.RData")
+
+cib <- cis[["cis_both"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # between 183-250 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","x","resid"))
+
+mns <- expand.grid(comp=c("auto","x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("auto","x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_bothEst_8ped_fem.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+   xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 180 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+##
+cib <- cis[["cis_auto"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 180-200 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","resid"))
+
+mns <- expand.grid(comp=c("auto","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("auto","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_autoEst_8ped_fem.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 180 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+
+##
+cib <- cis[["cis_x"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 180-250 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("x","resid"))
+
+mns <- expand.grid(comp=c("x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_xEst_8ped_fem.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 180 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 40. Var comp estimates for 8 ped excl gX term
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+library(GWASTools); library(ggplot2)
+
+cis <- getobj("nullSims_8ped_exclgX/varCompCIs_nullSims.RData")
+
+cib <- cis[["cix_both"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # only 100 or 95 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","x","resid"))
+
+mns <- expand.grid(comp=c("auto","x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=3"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=3"))
+mns$comp <- ordered(mns$comp,levels=c("auto","x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns <- mns[!is.nan(mns$value),]
+mns$value <- format(mns$value,digits=3)
+mns$sigma_x=NULL # no sigma_x variable
+
+pdf("boxplots_varComp_bothEst_8ped_exclgX.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_wrap(~sigma_a) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 100 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+##
+cib <- cis[["cis_auto"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # only 250 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","resid"))
+
+mns <- expand.grid(comp=c("auto","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("auto","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_autoEst_8ped_fem.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 250 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+
+##
+cib <- cis[["cis_x"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # only 250 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("x","resid"))
+
+mns <- expand.grid(comp=c("x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_xEst_8ped_fem.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 250 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 41. Process null simulations for 16 ped
+
+library(GWASTools)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+totalRes <- NULL
+for(i in 1:25){
+  dat <- getobj(paste0("nullSims_16ped/res_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_16ped/res2_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_16ped/res3_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+  dat <- getobj(paste0("nullSims_16ped/res4_",i,".RData"))
+  tosv <- dat[["mm_res"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  totalRes <- rbind(totalRes,tosv)
+  
+}
+
+save(totalRes,file="nullSims_16ped/mmRes_nullSims.RData")
+dim(totalRes) # 11700000 13
+table(totalRes$causal) # all F
+ftable(totalRes$model,totalRes$sigma_a,totalRes$sigma_x) # 375K iters for each config
+
+# check type I error quickly
+sum(totalRes$pval[totalRes$model=="auto"]<5e-05)/sum(totalRes$model=="auto") 
+sum(totalRes$pval[totalRes$model=="both"]<5e-05)/sum(totalRes$model=="both")
+sum(totalRes$pval[totalRes$model=="x"]<5e-05)/sum(totalRes$model=="x")
+sum(totalRes$pval[totalRes$model=="linear"]<5e-05)/sum(totalRes$model=="linear")
+
+tyIerr <- expand.grid(model=c("auto","both","x","linear"),alpha=c(5e-04,5e-05),
+                      sigma_x=c(0.5,0.3),sigma_a=c(0.5,0.3))
+tyIerr$est <- NA
+tyIerr$lower <- NA; tyIerr$upper <- NA
+for(i in seq_len(nrow(tyIerr))){
+  mmResF <- totalRes[totalRes$model==tyIerr$model[i]&totalRes$sigma_x==tyIerr$sigma_x[i]&
+                       totalRes$sigma_a==tyIerr$sigma_a[i],]
+  tyIerr$est[i] <- sum(mmResF$pval<tyIerr$alpha[i])/nrow(mmResF)
+  stdErr <- sqrt(tyIerr$alpha[i]*(1-tyIerr$alpha[i])/nrow(mmResF))
+  tyIerr$lower[i] <- tyIerr$est[i]-1.96*stdErr
+  tyIerr$upper[i] <- tyIerr$est[i]+1.96*stdErr
+}
+
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+# make the model an ordered factor so it prints both, x, auto, linear
+tyIerr$model <- ordered(tyIerr$model,levels=c("both","x","auto","linear"))
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-05&!is.nan(tyIerr$est),]
+
+pdf("typeIErr_16ped_5e05.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate, 375K Iterations") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+tyIerrSm <- tyIerr[tyIerr$alpha==5e-05&!is.nan(tyIerr$est)&!is.element(tyIerr$model,"linear"),]
+pdf("typeIErr_16ped_5e05_zoom.pdf")
+ggplot(tyIerrSm,aes(x=model,y=est)) +geom_point()+ geom_pointrange(aes(ymin=lower,ymax=upper))+
+  theme_bw() + geom_hline(aes(yintercept=5e-05,color="gray"))+
+  facet_grid(sigma_x~sigma_a) +
+  ylab("Type I Error Rate, 375K Iterations") + ggtitle(expression(paste("Type I Error Rate, ", alpha, "=5e-05")))
+dev.off()
+
+##
+cis_auto <- NULL
+cis_x <- NULL
+cis_both <- NULL
+fn <- list.files("nullSims_16ped")
+fn <- fn[-1] # this is the "oldRes" folder
+
+for(i in 1:length(fn)){
+  dat <- getobj(paste0("nullSims_16ped/",fn[i]))
+  tosv <- dat[["ci_x"]]
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","resid")
+  
+  cis_x <- rbind(cis_x,tosv)
+  
+  tosv <- dat[["ci_auto"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("auto","resid")
+  
+  cis_auto <- rbind(cis_auto,tosv)
+  
+  tosv <- dat[["ci_both"]]  
+  tosv$sigma_a <- dat[["sigma_auto"]]
+  tosv$sigma_x <- dat[["sigma_x"]]
+  tosv$comp <- c("x","auto","resid")
+  
+  cis_both <- rbind(cis_both,tosv)
+}
+
+cis <- list("cis_x"=cis_x,"cis_auto"=cis_auto,"cis_both"=cis_both)
+save(cis,file="nullSims_16ped/varCompCIs_nullSims.RData")
+
+rm(list=ls())
+
+
+#####
+# 42. Var comp estimates for 16 person pedigree
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+library(GWASTools); library(ggplot2)
+
+cis <- getobj("nullSims_16ped/varCompCIs_nullSims.RData")
+
+cib <- cis[["cis_both"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 250 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","x","resid"))
+
+mns <- expand.grid(comp=c("auto","x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("auto","x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns <- mns[!is.nan(mns$value),]
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_bothEst_16ped.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_wrap(sigma_x~sigma_a) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 250 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+##
+cib <- cis[["cis_auto"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # only 250 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","resid"))
+
+mns <- expand.grid(comp=c("auto","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("auto","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_autoEst_16ped.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 250 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+
+##
+cib <- cis[["cis_x"]]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # only 250 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("x","resid"))
+
+mns <- expand.grid(comp=c("x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp <- ordered(mns$comp,levels=c("x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_xEst_16ped.pdf")
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 250 Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 43. Look at new power results, beta=0.07
+
+#modelC_results_power_sA03sX03
+#modelC_results_power_sA05sX03
+#modelC_results_power_sA03sX05
+#modelC_results_power_sA05sX05/mmRes_SNP1992_beta0.05.RData
+
+# called from batch:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/olga_application
+# qsub -q thornton.q -N readRes batch_read_results.sh
+
+source("powerGraph.R")
+
+dat <- get(load("pvals_newPower_results_apr14.RData"))
+newcs <- get(load("pvals_newPower_results_apr16.RData"))
+dat <- rbind(dat,newcs)
+dim(dat) # 493350 14
+table(dat$beta1) # 240K 0.05, 253350 0.07
+dat <- dat[dat$beta1==0.07,]
+
+# make sure no duplicates
+sum(duplicated(dat$pval))
+dat <- dat[!duplicated(dat$pval),]
+dim(dat) # 240K 14
+
+toPl <- dat[dat$sigma_x=="03"&dat$sigma_a=="03"&!is.na(dat$pval),]
+dim(toPl) # 60000 14
+table(toPl$causal) # 30000 true
+sa3sx3=powerGraph(toPl,b=0.07,fn="powerGraph_sA03sX03.pdf",xlims=c(0,0.05),values=TRUE)
+sa3sx3$sigma_a=paste0("sigma_a=",0.3)
+sa3sx3$sigma_x=paste0("sigma_x=",0.3)
+
+toPl <- dat[dat$sigma_x=="03"&dat$sigma_a=="05"&!is.na(dat$pval),]
+dim(toPl) # 60K 14
+table(toPl$causal) # 30K true
+sa5sx3=powerGraph(toPl,b=0.07,fn="powerGraph_sA05sX03.pdf",xlims=c(0,0.05),values=TRUE)
+sa5sx3$sigma_a=paste0("sigma_a=",0.5)
+sa5sx3$sigma_x=paste0("sigma_x=",0.3)
+
+toPl <- dat[dat$sigma_x=="05"&dat$sigma_a=="03"&!is.na(dat$pval),]
+dim(toPl) # 60K 14
+table(toPl$causal) # 30K
+sa3sx5=powerGraph(toPl,b=0.07,fn="powerGraph_sA03sX05.pdf",xlims=c(0,0.05),values=TRUE)
+sa3sx5$sigma_a=paste0("sigma_a=",0.3)
+sa3sx5$sigma_x=paste0("sigma_x=",0.5)
+
+toPl <- dat[dat$sigma_x=="05"&dat$sigma_a=="05"&!is.na(dat$pval),]
+dim(toPl) # 60K 14
+table(toPl$causal) # 30K t
+sa5sx5=powerGraph(toPl,b=0.07,fn="powerGraph_sA05sX05.pdf",xlims=c(0,0.05),values=TRUE)
+sa5sx5$sigma_a=paste0("sigma_a=",0.5)
+sa5sx5$sigma_x=paste0("sigma_x=",0.5)
+
+library(ggplot2); library(reshape)
+tot <- rbind(sa3sx3,sa3sx5,sa5sx3,sa5sx5)
+tot$x_fp_rate <- tot$x_fp/tot$xiter
+tot$x_tp_rate <- tot$x_tp/tot$xiter
+tot$auto_fp_rate <- tot$auto_fp/tot$autoiter
+tot$auto_tp_rate <- tot$auto_tp/tot$autoiter
+tot$both_fp_rate <- tot$both_fp/tot$bothiter
+tot$both_tp_rate <- tot$both_tp/tot$bothiter
+
+both <- tot[,c("sigma_a","sigma_x","both_fp_rate","both_tp_rate")]
+both$model <- "both"
+both$fp <- both$both_fp_rate
+both$tp <- both$both_tp_rate
+
+auto <- tot[,c("sigma_a","sigma_x","auto_fp_rate","auto_tp_rate")]
+auto$model <- "auto"
+auto$fp <- auto$auto_fp_rate
+auto$tp <- auto$auto_tp_rate
+
+x <- tot[,c("sigma_a","sigma_x","x_fp_rate","x_tp_rate")]
+x$model <- "x"
+x$fp <- x$x_fp_rate
+x$tp <- x$x_tp_rate
+
+toPl <- rbind(x[,c("sigma_x","sigma_a","model","tp","fp")],
+              auto[,c("sigma_x","sigma_a","model","tp","fp")],
+              both[,c("sigma_x","sigma_a","model","tp","fp")])
+
+toPl <- toPl[toPl$fp<=0.05,]
+
+pdf("power_beta07.pdf")
+ggplot(toPl,aes(x=fp,y=tp,color=model)) + geom_line(size=1.5,aes(linetype=model)) + facet_grid(sigma_a~sigma_x) + theme_bw() +
+  ylab("True Positive Rate") + xlab("False Positive Rate") +ggtitle(expression(paste(beta,"=0.07")))
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 44. New power results, extreme sigma, beta=0.05
+
+#modelC_results_power_sA03sX3
+#modelC_results_power_sA3sX03
+
+# called from batch:
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/olga_application
+# qsub -q thornton.q -N readRes batch_read_results.sh
+
+source("powerGraph.R")
+
+dat <- get(load("pvals_newPower_results_apr17.RData"))
+dim(dat) # 120K 14
+
+toPl <- dat[dat$sigma_x=="03"&dat$sigma_a=="3"&!is.na(dat$pval),]
+dim(toPl) # 60000 14
+table(toPl$causal) # 30000 true
+sa3sx3=powerGraph(toPl,b=0.05,fn="powerGraph_sA03sX03.pdf",xlims=c(0,0.05),values=TRUE)
+sa3sx3$sigma_a=paste0("sigma_a=",3)
+sa3sx3$sigma_x=paste0("sigma_x=",0.3)
+
+toPl <- dat[dat$sigma_x=="3"&dat$sigma_a=="03"&!is.na(dat$pval),]
+dim(toPl) # 60K 14
+table(toPl$causal) # 30K true
+sa5sx3=powerGraph(toPl,b=0.05,fn="powerGraph_sA05sX03.pdf",xlims=c(0,0.05),values=TRUE)
+sa5sx3$sigma_a=paste0("sigma_a=",0.3)
+sa5sx3$sigma_x=paste0("sigma_x=",3)
+
+library(ggplot2); library(reshape)
+tot <- rbind(sa3sx3,sa5sx3)
+tot$x_fp_rate <- tot$x_fp/tot$xiter
+tot$x_tp_rate <- tot$x_tp/tot$xiter
+tot$auto_fp_rate <- tot$auto_fp/tot$autoiter
+tot$auto_tp_rate <- tot$auto_tp/tot$autoiter
+tot$both_fp_rate <- tot$both_fp/tot$bothiter
+tot$both_tp_rate <- tot$both_tp/tot$bothiter
+
+both <- tot[,c("sigma_a","sigma_x","both_fp_rate","both_tp_rate")]
+both$model <- "both"
+both$fp <- both$both_fp_rate
+both$tp <- both$both_tp_rate
+
+auto <- tot[,c("sigma_a","sigma_x","auto_fp_rate","auto_tp_rate")]
+auto$model <- "auto"
+auto$fp <- auto$auto_fp_rate
+auto$tp <- auto$auto_tp_rate
+
+x <- tot[,c("sigma_a","sigma_x","x_fp_rate","x_tp_rate")]
+x$model <- "x"
+x$fp <- x$x_fp_rate
+x$tp <- x$x_tp_rate
+
+toPl <- rbind(x[,c("sigma_x","sigma_a","model","tp","fp")],
+              auto[,c("sigma_x","sigma_a","model","tp","fp")],
+              both[,c("sigma_x","sigma_a","model","tp","fp")])
+
+toPl <- toPl[toPl$fp<=0.05,]
+
+pdf("power_beta05_extremeSigma.pdf",width=11)
+ggplot(toPl,aes(x=fp,y=tp,color=model)) + geom_line(size=1.5,aes(linetype=model)) + facet_wrap(sigma_a~sigma_x) + theme_bw() +
+  ylab("True Positive Rate") + xlab("False Positive Rate") +ggtitle(expression(paste(beta,"=0.05")))
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 45. Type I error from causal=F SNPs in power results
+
+library(GWASTools); library(ggplot2)
+dat1 <- getobj("pvals_newPower_results_apr17.RData")
+dat2 <- getobj("pvals_newPower_results_apr14.RData")
+dat3 <- getobj("pvals_newPower_results_apr10.RData")
+
+dat <- rbind(dat1,dat2,dat3)
+sum(duplicated(dat$pval))
+
+dat$sigma_x[is.element(dat$sigma_x,"03")] <- 0.3
+dat$sigma_x[is.element(dat$sigma_x,"05")] <- 0.5
+dat$sigma_a[is.element(dat$sigma_a,"03")] <- 0.3
+dat$sigma_a[is.element(dat$sigma_a,"05")] <- 0.5
+
+### look at type I error rate from these causal==F results
+nullS <- dat[!dat$causal,]
+ftable(nullS$model,nullS$sigma_x,nullS$sigma_a) # 20K of each configuration
+# 10K for the extreme sigma values
+
+# first just find type I error for non-extreme sigma values
+toPl <- nullS[!is.element(nullS$sigma_x,3)&!is.element(nullS$sigma_a,3),]
+dim(toPl) # 246675 14
+
+alpha <- 5e-04
+tyIerr <- expand.grid(model=c("both","auto","x"),sigma_x=c(0.3,0.5),sigma_a=c(0.3,0.5))
+tyIerr$fp <- NA
+tyIerr$n <- NA
+
+for(i in seq_len(nrow(tyIerr))){
+  tyIerr$fp[i] <- sum(toPl$pval[toPl$model==tyIerr$model[i]&toPl$sigma_x==tyIerr$sigma_x[i]&
+                                          toPl$sigma_a==tyIerr$sigma_a[i]]<alpha)
+  tyIerr$n[i] <- sum(toPl$model==tyIerr$model[i]&toPl$sigma_x==tyIerr$sigma_x[i]&
+                                  toPl$sigma_a==tyIerr$sigma_a[i])
+  
+}
+tyIerr$ty <- tyIerr$fp/tyIerr$n
+tyIerr$lower <- tyIerr$ty-1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$upper <- tyIerr$ty+1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+ggplot(tyIerr,aes(x=model,y=ty)) + geom_point() + facet_grid(sigma_a~sigma_x) +
+  geom_hline(yintercept=alpha) + geom_segment(aes(x=model,y=lower,xend=model,yend=upper))
+
+
+tyIerr <- expand.grid(model=c("both","auto","x"),sigma_x=c(0.3,3),sigma_a=c(0.3,3))
+tyIerr$fp <- NA
+tyIerr$n <- NA
+
+for(i in seq_len(nrow(tyIerr))){
+  tyIerr$fp[i] <- sum(nullS$pval[nullS$model==tyIerr$model[i]&nullS$sigma_x==tyIerr$sigma_x[i]&
+                                  nullS$sigma_a==tyIerr$sigma_a[i]]<alpha)
+  tyIerr$n[i] <- sum(nullS$model==tyIerr$model[i]&nullS$sigma_x==tyIerr$sigma_x[i]&
+                       nullS$sigma_a==tyIerr$sigma_a[i])
+  
+}
+tyIerr$ty <- tyIerr$fp/tyIerr$n
+tyIerr$lower <- tyIerr$ty-1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$upper <- tyIerr$ty+1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+tyIerr <- tyIerr[4:9,]
+
+ggplot(tyIerr,aes(x=model,y=ty)) + geom_point() + facet_wrap(sigma_a~sigma_x) +
+  geom_hline(yintercept=alpha) + geom_segment(aes(x=model,y=lower,xend=model,yend=upper))
+
+
+
+
+toPl <- nullS[!is.element(nullS$sigma_x,3)&!is.element(nullS$sigma_a,3),]
+dim(toPl) # 246675 14
+
+alpha <- 1e-03
+tyIerr <- expand.grid(model=c("both","auto","x"),sigma_x=c(0.3,0.5),sigma_a=c(0.3,0.5))
+tyIerr$fp <- NA
+tyIerr$n <- NA
+
+for(i in seq_len(nrow(tyIerr))){
+  tyIerr$fp[i] <- sum(toPl$pval[toPl$model==tyIerr$model[i]&toPl$sigma_x==tyIerr$sigma_x[i]&
+                                  toPl$sigma_a==tyIerr$sigma_a[i]]<alpha)
+  tyIerr$n[i] <- sum(toPl$model==tyIerr$model[i]&toPl$sigma_x==tyIerr$sigma_x[i]&
+                       toPl$sigma_a==tyIerr$sigma_a[i])
+  
+}
+tyIerr$ty <- tyIerr$fp/tyIerr$n
+tyIerr$lower <- tyIerr$ty-1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$upper <- tyIerr$ty+1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+ggplot(tyIerr,aes(x=model,y=ty)) + geom_point() + facet_grid(sigma_a~sigma_x) +
+  geom_hline(yintercept=alpha) + geom_segment(aes(x=model,y=lower,xend=model,yend=upper))
+
+
+tyIerr <- expand.grid(model=c("both","auto","x"),sigma_x=c(0.3,3),sigma_a=c(0.3,3))
+tyIerr$fp <- NA
+tyIerr$n <- NA
+
+for(i in seq_len(nrow(tyIerr))){
+  tyIerr$fp[i] <- sum(nullS$pval[nullS$model==tyIerr$model[i]&nullS$sigma_x==tyIerr$sigma_x[i]&
+                                   nullS$sigma_a==tyIerr$sigma_a[i]]<alpha)
+  tyIerr$n[i] <- sum(nullS$model==tyIerr$model[i]&nullS$sigma_x==tyIerr$sigma_x[i]&
+                       nullS$sigma_a==tyIerr$sigma_a[i])
+  
+}
+tyIerr$ty <- tyIerr$fp/tyIerr$n
+tyIerr$lower <- tyIerr$ty-1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$upper <- tyIerr$ty+1.96*sqrt((alpha*(1-alpha))/tyIerr$n)
+tyIerr$sigma_a <- paste0("sigma_a=",tyIerr$sigma_a)
+tyIerr$sigma_x <- paste0("sigma_x=",tyIerr$sigma_x)
+
+tyIerr <- tyIerr[4:9,]
+
+pdf("typeIErr_16ped_1e03_extremeSigma.pdf")
+ggplot(tyIerr,aes(x=model,y=ty)) + geom_point() + facet_wrap(sigma_a~sigma_x) + theme_bw() +
+  geom_hline(yintercept=alpha) + geom_segment(aes(x=model,y=lower,xend=model,yend=upper)) +
+  ylab("Type I Error Rate, 10K Iterations") + 
+  ggtitle(expression(paste("Type I Error Rate, ",alpha, "=0.001",sep="")))
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# # 46. Var comp estiamtes for 16 person ped, extreme sigma
+
+library(GWASTools); library(ggplot2)
+
+totalRes <- getobj("varEst_newPower_results_apr17.RData")
+
+table(totalRes$sigma_x,totalRes$sigma_a) # 70K of extreme sigma values
+totalRes$sigma_x[totalRes$sigma_x=="03"] <- 0.3
+totalRes$sigma_a[totalRes$sigma_a=="03"] <- 0.3
+
+totalRes$comp <- NA
+totalRes$comp[totalRes$model=="both"] <- rep(c("x","auto","resid"),times=sum(totalRes$model=="both")/3)
+totalRes$comp[totalRes$model=="x"] <- rep(c("x","resid"),times=sum(totalRes$model=="x")/2)
+totalRes$comp[totalRes$model=="auto"] <- rep(c("auto","resid"),times=sum(totalRes$model=="auto")/2)
+
+cib <- totalRes[totalRes$model=="both",]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 10K of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","x","resid"))
+
+mns <- expand.grid(comp=c("auto","x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=3"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=3"))
+mns$comp <- ordered(mns$comp,levels=c("auto","x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns <- mns[!is.nan(mns$value),]
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_bothEst_16ped_extremeSigma.pdf",width=11)
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_wrap(sigma_x~sigma_a) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 10K Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+##
+cib <- totalRes[totalRes$model=="auto",]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 10K of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("auto","resid"))
+
+mns <- expand.grid(comp=c("auto","resid"),sigma_a=c("sigma_a=0.3","sigma_a=3"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=3"))
+mns$comp <- ordered(mns$comp,levels=c("auto","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns <- mns[!is.nan(mns$value),]
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_autoEst_16ped_extremeSigma.pdf",width=11)
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_wrap(sigma_x~sigma_a) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 10K Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+
+##
+cib <- totalRes[totalRes$model=="x",]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 10K of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp=ordered(cib$comp,levels=c("x","resid"))
+
+mns <- expand.grid(comp=c("x","resid"),sigma_a=c("sigma_a=0.3","sigma_a=3"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=3"))
+mns$comp <- ordered(mns$comp,levels=c("x","resid"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns <- mns[!is.nan(mns$value),]
+mns$value <- format(mns$value,digits=3)
+
+pdf("boxplots_varComp_xEst_16ped_extremeSigma.pdf",width=11)
+ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_wrap(sigma_x~sigma_a) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  ggtitle("Variance Component Estimates of 10K Iterations") + 
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4) 
+dev.off()
+
+rm(list=ls())
 
