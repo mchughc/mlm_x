@@ -6300,6 +6300,9 @@ length(chrs) # 14192
 #506  488  402  438  245  255 
 stInd <- cumsum(t)
 
+pos <- read.gdsn(index.gdsn(gdsobj,"snp.position"))
+length(pos); head(pos) # 14192
+
 # ok, so the ancestry estimates are matrices of sample x snp
 # just read in chr 2 ancestry estimates, for all SNPs/regions
 
@@ -6432,6 +6435,85 @@ ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
   geom_segment(x=351,xend=1072,y=mean(segMeans[,"wo_s6"]),yend=mean(segMeans[,"wo_s6"]),size=1.1,color="gray") +
   geom_segment(x=250,xend=350,y=mean(segMeans[,"s6"]),yend=mean(segMeans[,"s6"]),size=1.1,color="gray")
 dev.off()
+
+res$CAnD_Significant <- "No"
+res$CAnD_Significant[(res$Segment>50&res$Segment<150)] <- "Block 2"
+
+p1 <- ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
+                               xend=Segment+1,yend=nextMn),size=1.5) + theme_bw() +
+  ggtitle("Mean Native American Ancestry on Chromosome 2\n1703 Puerto Ricans") +
+  ylab("Mean Proportion Local Ancestry") + geom_segment(x=50,y=mean(segMeans[,"s2"]),xend=150,size=1.1,
+                                                        yend=mean(segMeans[,"s2"]),color="gray") +
+  geom_segment(x=1,y=mean(segMeans[,"wo_s2"]),xend=49,yend=mean(segMeans[,"wo_s2"]),color="gray",size=1.1) + 
+  geom_segment(x=151,y=mean(segMeans[,"wo_s2"]),xend=1072,yend=mean(segMeans[,"wo_s2"]),color="gray",size=1.1)
+
+res$CAnD_Significant <- "No"
+res$CAnD_Significant[(res$Segment>250&res$Segment<350)] <- "Block 6"
+
+p2 <- ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
+                               xend=Segment+1,yend=nextMn),size=1.5) + theme_bw() +
+  ylab("Mean Proportion Local Ancestry") + 
+  geom_segment(x=1,xend=249,y=mean(segMeans[,"wo_s6"]),yend=mean(segMeans[,"wo_s6"]),size=1.1,color="gray") +
+  geom_segment(x=351,xend=1072,y=mean(segMeans[,"wo_s6"]),yend=mean(segMeans[,"wo_s6"]),size=1.1,color="gray") +
+  geom_segment(x=250,xend=350,y=mean(segMeans[,"s6"]),yend=mean(segMeans[,"s6"]),size=1.1,color="gray")
+
+
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+pdf("localAncestry_chr2_PR_withSigBlocks.pdf",width=21,height=14)
+multiplot(p1, p2, cols=1)
+dev.off()
+
+# what chromosome position do these 'segment' regions map to?
+# pos is the vector of chr positions for each local ancestry reading
+# want chr 2, segment 50-150 and 250-350
+annot <- data.frame(cbind(chrs,pos))
+res$pos <- annot$pos[annot$chrs==2]
+range(res$pos[res$Segment>50&res$Segment<150]) # 6538054 19958794
+# it's really the first half of the segment
+range(res$pos[res$Segment>50&res$Segment<100]) # 6538054 11535738
+
+
+range(res$pos[res$Segment>250&res$Segment<350]) # 40983374 64690052
+
+res$CAnD_Significant <- "No"
+res$CAnD_Significant[(res$Segment>50&res$Segment<100)] <- "Block 2"
+ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
+                                     xend=Segment+1,yend=nextMn),size=1.5)
+
 
 rm(list=ls())
 
