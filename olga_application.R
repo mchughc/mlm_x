@@ -69,6 +69,27 @@
 # 55. Perform CAnD and nonP CAnD and pooled t-test on local ancestry estimates
 # 56. Parse CAnD results
 # 57. Look at PR chr 2 results in depth
+# 58. Look at PR chr 2 results in depth, EUR ancestry
+
+# 59. Re-run ADMIXTURE on the X chromosome
+# 60. CAnD on the x vs auto proportions
+# 61. Get k0, k1, k2 for X KC F-F pairs
+# 62. Make some plots of KC on X chr for MLM-X paper
+# 63. Calculate genomic inf across autos only, compare pvalues
+
+# 64. Rerun PC-AiR, PC-Relate iterations w 3rd deg relatives
+# 65. Manh of MLM-X, simple MLM X chr results in one png file
+# 66. Run pcairPartition() incl & excl the autosomal KING divMat
+# 67. Run PC-Relate on set of 3600 SNPs, not on X chr
+# 68. Run regression to check corr of auto SNPs with X PCs
+# 69. Parse chr 19 PC-Relate results
+# 70. Plot distribution of X chr markers across the chr
+# 71. QQ plots for simple MLM and MLM-X on RBC trait, with lambda_GC in legend
+# 72. Run regression to check corr of X chr SNPs with auto PCs
+# 73. Make barplots of var comp estimates w and w/o X chr KC for RBC
+# 74. Compare chr 19 results to X chr KC FF pairs
+
+
 
 
 #####
@@ -478,7 +499,8 @@ legend("topleft",c("CentralAmerican","Cuban","Dominican","Mexican","PuertoRican"
 dev.off()
 
 png("pca_x_ev12_col.png")
-plot(-pc$vectors[,1],pc$vectors[,2],xlab="EV1 (3.48%)",ylab="EV2 (1.87%)",type="n")
+plot(-pc$vectors[,1],pc$vectors[,2],xlab="EV1 (3.48%)",ylab="EV2 (1.87%)",type="n",
+     main="PCA with 3,600 LD-pruned X Chromosome SNPs",cex.main=1.5)
 points(-pc$vectors[scan$race.cat=="Mexican",1],pc$vectors[scan$race.cat=="Mexican",2],pch=20,col="goldenrod")
 points(-pc$vectors[scan$race.cat=="CentralAmerican",1],pc$vectors[scan$race.cat=="CentralAmerican",2],pch=20,col="red")
 points(-pc$vectors[scan$race.cat=="SouthAmerican",1],pc$vectors[scan$race.cat=="SouthAmerican",2],pch=20,col="magenta")
@@ -803,6 +825,9 @@ dev.off()
 olga <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/amstilp/results/pca/v08_study_unrelated_pcair/pca.v08_study_unrel.RData"))
 dim(olga$eigenvect) # 10642    32
 
+olga$eigenvect[,1:5]/olga$eigenval[,1:5] # 0.0255098027 0.0108610336 0.0009410187 0.0007580892
+
+
 # plot olga ev1 auto vs xchr ev1
 # calculate corr
 
@@ -837,6 +862,43 @@ legend("topleft",c("CentralAmerican","Cuban","Dominican","Mexican","PuertoRican"
        col=c("red","blue","burlywood","goldenrod","green","magenta","black"),cex=0.9)
 legend("bottomright",c(expression(paste(rho,"= 0.999"))),bty="n")
 dev.off()
+
+# plot auto pc1 vs auto pc2
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+scan <- scan[is.element(scan$scanID,olga$sample.id),]
+dim(scan)
+
+png("pca_auto_ev12_col.png")
+plot(olga$eigenvect[,1],olga$eigenvect[,2],xlab="EV1 (2.62%)",ylab="EV2 (1.23%)",main="Autosomal PCA",
+     cex.main=1.5,type="n")
+points(olga$eigenvect[scan$race.cat=="Mexican"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="Mexican"&is.na(scan$gengrp6.outliers),2],
+       pch=20,col="goldenrod")
+points(olga$eigenvect[scan$race.cat=="CentralAmerican"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="CentralAmerican"&is.na(scan$gengrp6.outliers),2],
+       pch=20,col="red")
+points(olga$eigenvect[scan$race.cat=="SouthAmerican"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="SouthAmerican"&is.na(scan$gengrp6.outliers),2],
+       pch=20,col="magenta")
+points(olga$eigenvect[scan$race.cat=="PuertoRican"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="PuertoRican"&is.na(scan$gengrp6.outliers),2],
+       pch=20,col="green")
+points(olga$eigenvect[scan$race.cat=="Cuban"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="Cuban"&is.na(scan$gengrp6.outliers),2],pch=20,col="blue")
+points(olga$eigenvect[scan$race.cat=="Dominican"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="Dominican"&is.na(scan$gengrp6.outliers),2],
+       pch=20,col="burlywood")
+points(olga$eigenvect[scan$race.cat=="Other"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="Other"&is.na(scan$gengrp6.outliers),2],
+       pch=20,col="black")
+points(olga$eigenvect[scan$race.cat=="Unknown"&is.na(scan$gengrp6.outliers),1],
+       olga$eigenvect[scan$race.cat=="Unknown"&is.na(scan$gengrp6.outliers),2],
+       pch=20,col="black")
+legend("topleft",c("CentralAmerican","Cuban","Dominican","Mexican","PuertoRican","SouthAmerican","Other/Unknown"),pch=20,
+       col=c("red","blue","burlywood","goldenrod","green","magenta","black"),cex=0.9)
+dev.off()
+
+
 
 ##
 # plot ev2 auto vs xchr ev2
@@ -5752,9 +5814,9 @@ ggplot(melted, aes(x=n, y=Proportion, fill=variable, color=variable)) +
   facet_grid(genome~bkgrd, scales="free_x") +
   theme_bw() + 
   theme(axis.line=element_blank(),
-        axis.ticks.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.title.x=element_blank(),
+        axis.ticks.x=element_blank(),axis.text=element_text(size=14),
+        axis.text.x=element_blank(),legend.text=element_text(size=14),
+        axis.title.x=element_blank(),strip.text=element_text(size=15),
         panel.margin=unit(0, "in"))
 dev.off()
 
@@ -5764,14 +5826,16 @@ cols.all <- c(setNames(paste0(cols, "55"), paste0(names(cols),".X")),
 cols.all <- cols.all[c(4,1,5,2,6,3)]
 
 melted$Ancestry.Type <- paste(melted$variable,melted$genome,sep=".")
-pdf("localAncest_boxplot_auto_x_woutPvals.pdf",width=11,height=9)
+
+pdf("localAncest_boxplot_auto_x_woutPvals.pdf",width=13,height=9)
 ggplot(melted, aes(x=bkgrd, y=Proportion, fill=Ancestry.Type)) + geom_boxplot() +
   scale_fill_manual(values=cols.all, breaks=names(cols.all)) +
-  facet_wrap(~variable, ncol=1) + 
+  facet_wrap(~variable, ncol=1) + theme_bw() +
   ylab("Fraction of continental ancestry") + xlab("Self-identified background") +
   #geom_text(data=pvalPlot, aes(x=bkgrd, y=y, label=value), size=4) +
-  theme(axis.text.x=element_text(colour="black",size=12),
-        axis.text.y=element_text(size=13)) + theme_bw()
+  theme(axis.text=element_text(size=12),axis.title=element_text(size=18),
+        title=element_text(size=20),strip.text = element_text(size=16),
+        legend.text=element_text(size=16)) 
 dev.off()
 
 # make a boxplot of the differences, add a line at y=0
@@ -6152,7 +6216,8 @@ ggplot(res,aes(x=bg,y=-log10(value))) + geom_point(size=3,aes(color=factor(bkgrd
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Self-Identified Background") + scale_color_manual(values=col,breaks=rev(names(col)),
                                                           guide = guide_legend(title = "")) +
-  theme(legend.position = "bottom") +  labs(y=expression(-log["10"]*"(pvalue)")) 
+  theme(legend.position = "bottom",axis.text=element_text(size=13),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16),legend.text=element_text(size=14)) +  labs(y=expression(-log["10"]*"(pvalue)")) 
 dev.off()
 
 ## now take results, plot pvalues for all chrs for each self-id background in turn
@@ -6231,7 +6296,8 @@ ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(col
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
                                           guide = guide_legend(title = "")) +
-  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
   ggtitle("Self-Identified Puerto Ricans, n=1703")
 dev.off()
 
@@ -6355,6 +6421,8 @@ res <- rbind(meanEur,meanAfr,meanNam)
 pdf("localAncestry_chr2_PR.pdf",width=11)
 ggplot(res,aes(x=Segment,y=mn,color=Ancestry)) + geom_line(size=1.5) + theme_bw() +
   ggtitle("Mean Local Ancestry Proportion on Chromosome 2\n1703 Puerto Ricans") +
+  theme(axis.text=element_text(size=16),axis.title=element_text(size=16),
+        legend.text=element_text(size=16),title=element_text(size=20))+
   ylab("Mean Proportion Local Ancestry")
 dev.off()
 
@@ -6514,8 +6582,1434 @@ res$CAnD_Significant[(res$Segment>50&res$Segment<100)] <- "Block 2"
 ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
                                      xend=Segment+1,yend=nextMn),size=1.5)
 
+rm(list=ls())
+
+
+#####
+# 58. Look at PR chr 2 results in depth, EUR ancestry
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+library(GWASTools)
+library(gdsfmt)
+
+# load in local ancestry estimates
+gdsfn <- "/projects/geneva/gcc-fs2/OLGA/genotype/native_american/olga_with_refpanel/reich_1000G/local_ancestry/gds/unique/olga_reich_1000G_lai_new_unique.gds"
+gdsobj <- openfn.gds(gdsfn)
+
+# need to get the mean values across chromosomes
+# figure out how to loop through and take means for each ancestry, by chr
+chrs <- read.gdsn(index.gdsn(gdsobj, "snp.chromosome"))
+length(chrs) # 14192
+(t <- table(chrs))
+#   1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16 
+#1116 1072  939  874  846  811  760  688  661  720  665  709  520  479  484  514 
+# 17   18   19   20   21   22 
+#506  488  402  438  245  255 
+stInd <- cumsum(t)
+
+pos <- read.gdsn(index.gdsn(gdsobj,"snp.position"))
+length(pos); head(pos) # 14192
+
+# ok, so the ancestry estimates are matrices of sample x snp
+# just read in chr 2 ancestry estimates, for all SNPs/regions
+
+ancest <- data.frame(matrix(NA,nrow=12803,ncol=(1072*3+1)))
+colnames(ancest) <- c("scanID",rep(c("eur","afr","amer"),each=1072))
+
+ancest$scanID <- read.gdsn(index.gdsn(gdsobj,"sample.id"))
+
+tmpEur <- read.gdsn(index.gdsn(gdsobj,"dosage_eur"),start=c(1,1),count=c(-1,-1))
+tmpAfr <- read.gdsn(index.gdsn(gdsobj,"dosage_afr"),start=c(1,1),count=c(-1,-1))
+tmpNam <- read.gdsn(index.gdsn(gdsobj,"dosage_amer"),start=c(1,1),count=c(-1,-1))
+# now have the three ancestry estimates across chr2
+
+# just subset to pr samples
+scan <- getobj("admix_xchr_aftermerge.RData")
+unrel <- getobj("unrelated_pcair_deg4.RData")
+
+scan <- scan[is.element(scan$scanID,unrel),]
+dim(scan) # 10073 in scan; this is correct
+
+tmpEur <- data.frame(tmpEur)
+tmpEur$scanID <- ancest$scanID
+tmpEur <- merge(tmpEur,scan[,c("scanID","bkgrd")],by="scanID",all.y=TRUE)
+dim(tmpEur) # 10073 14194
+
+tmpAfr <- data.frame(tmpAfr)
+tmpAfr$scanID <- ancest$scanID
+tmpAfr <- merge(tmpAfr,scan[,c("scanID","bkgrd")],by="scanID",all.y=TRUE)
+dim(tmpAfr) # 10073 14194
+
+tmpNam <- data.frame(tmpNam)
+tmpNam$scanID <- ancest$scanID
+tmpNam <- merge(tmpNam,scan[,c("scanID","bkgrd")],by="scanID",all.y=TRUE)
+dim(tmpNam) # 10073 14194
+
+# get mean ancestry at each position across all PR individs
+meanEur <- data.frame(mn=apply(tmpEur[tmpEur$bkgrd=="PuertoRican",c((1116+2):(1116+2+1073))],2,function(x){sum(x)/(2*length(x))}))
+meanAfr <- data.frame(mn=apply(tmpAfr[tmpAfr$bkgrd=="PuertoRican",c((1116+2):(1116+2+1073))],2,function(x){sum(x)/(2*length(x))}))
+meanNam <- data.frame(mn=apply(tmpNam[tmpNam$bkgrd=="PuertoRican",c((1116+2):(1116+2+1073))],2,function(x){sum(x)/(2*length(x))}))
+
+meanEur$Ancestry <- "Europe"
+meanAfr$Ancestry <- "Africa"
+meanNam$Ancestry <- "America"
+
+meanNam$Segment <- 1:nrow(meanNam)
+meanEur$Segment <- 1:nrow(meanEur)
+meanAfr$Segment <- 1:nrow(meanAfr)
+
+# perform CAnD in a sliding window fashion, comparing mean local ancestry in a 50 segment window to 
+# a mean of the remaining chromosome
+
+# do for EUR ancestry
+# calculate the means first; it'll be 2 cols per segment
+segMeans <- data.frame(matrix(NA,nrow=sum(tmpNam$bkgrd=="PuertoRican"),ncol=21*2+1))
+colnames(segMeans) <- c("scanID",paste0(c("s","wo_s"),rep(1:21,each=2)))
+
+# do the first segment by hand
+smeur <- tmpEur[tmpEur$bkgrd=="PuertoRican",(1116+2):(1116+101)]
+lgeur <- tmpEur[tmpEur$bkgrd=="PuertoRican",c((2:1117),(1218:ncol(tmpEur)-1))]
+segMeans$s1 <- rowSums(smeur)/(2*ncol(smeur))
+segMeans$wo_s1 <- rowSums(lgeur)/(2*ncol(lgeur))
+
+for(i in 2:21){
+  cl <- paste0("s",i)
+  cl2 <- paste0("wo_s",i)
+  
+  smeur <- tmpEur[tmpEur$bkgrd=="PuertoRican",(1116+1+(i-1)*50):(1116+(i-1)*50+100)]
+  lgeur <- tmpEur[tmpEur$bkgrd=="PuertoRican",c(2:(1116+(i-1)*50),(1116+(i-1)*50+100+1):(ncol(tmpEur)-1))]
+
+  segMeans[,cl] <- rowSums(smeur)/(2*ncol(smeur))
+  segMeans[,cl2] <- rowSums(lgeur)/(2*ncol(lgeur))
+}
+
+pvals <- rep(NA,21)
+for(i in seq(from=2,to=ncol(segMeans),by=2)){
+  pvals[(i/2)] <- t.test(segMeans[,i],segMeans[,(i+1)],paired=TRUE)$p.value
+}
+
+pvals <- pvals*(length(pvals))
+pvals[pvals>=1] <- 1
+
+res <- data.frame(pvalue=pvals,id=1:length(pvals))
+
+pdf("cand_pvalues_chr2_EUR_pr_100segmentBlock.pdf")
+ggplot(res,aes(x=id,y=-log10(pvalue))) + theme_bw() + geom_point() +xlab("100 Segment Block") + geom_hline(yintercept=-log10(0.05))+
+  ylab(expression(paste(-log[10],"(pvalue)"))) + theme(axis.text=element_text(size=16),axis.title=element_text(size=16)) +
+  ggtitle("CAnD Results for European Ancestry, Chr 2 Window vs Autosomal Mean\n1703 Puerto Ricans")
+dev.off()
+
+# get mean across genome
+meanEur <- data.frame(mn=apply(tmpEur[tmpEur$bkgrd=="PuertoRican",(2:14193)],2,function(x){sum(x)/(2*length(x))}))
+res <- rbind(meanEur)
+res$nextMn <- c(res$mn[2:nrow(res)],res$mn[nrow(res)])
+res$Segment <- 1:nrow(res)
+res$Chr <- chrs
+
+pdf("localAncestry_chr2_EUR_withSigBlocks.pdf",width=11)
+par(mfrow=c(2,1))
+
+res$CAnD_Significant <- "No"
+res$CAnD_Significant[res$Segment<(100+1116)&res$Segment>1116] <- "Yes"
+res$CAnD_Significant[(res$Segment>(350+1116)&res$Segment<(500+1116))] <- "Yes"
+res$CAnD_Significant[(res$Segment>(800+1116)&res$Segment<(1000+1116))] <- "Yes"
+
+pdf("localAncestry_chr2_EUR_withSigBlocks.pdf",width=14)
+ggplot(res) + geom_segment(aes(x=Segment,y=mn,color=CAnD_Significant,
+                               xend=Segment+1,yend=nextMn),size=1.5) + theme_bw() +
+  ggtitle("Mean Native American Ancestry Autosomal-Wide\n1703 Puerto Ricans") +
+  ylab("Mean Proportion Local Ancestry")
+dev.off()
+
 
 rm(list=ls())
 
 
 #####
+# 59. Re-run ADMIXTURE on the X chromosome
+
+## moved all old results to
+# /projects/geneva/geneva_sata/caitlin/mlm_x/olga_application/admixture/old_admixture_results/
+
+# first run in batch prune and subset gds file to pruned x chr SNPs
+# cd /projects/geneva/geneva_sata/caitlin/mlm_x/olga_application/admixture
+# qsub -q thornton.q -N xfiltgds batch_gds2ped_subset.sh
+# which calls gds2ped_subset_v2.R
+
+## ran admixture with three sets of snps:
+# 1. no ld pruning, n=9694
+# 2. ld pruning with usual thresh of 0.32, n=2233
+# 3. ld pruning with less stringent thresh of 0.48, n=3494
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/olga_application/admixture")
+library(GWASTools)
+
+res1 <- read.table("olga_ref_unrel_xpruned.3.Q",as.is=TRUE)
+res2 <- read.table("olga_ref_unrel_x.3.Q",as.is=TRUE)
+res3 <- read.table("olga_ref_unrel_xpruned_048.3.Q",as.is=TRUE)
+
+pop <- read.table("olga_ref_unrel_xpruned.pop")
+fam <- read.table("olga_ref_unrel_xpruned.fam")
+
+colnames(res1) <- paste("est",1:3,"_pruned",sep="")
+colnames(res2) <- paste("est",1:3,sep="")
+colnames(res3) <- paste("est",1:3,"_pruned048",sep="")
+
+res <- cbind(fam$V2,pop,res1,res2,res3)
+colnames(res)[1:2] <- c("scanID","pop")
+
+res[res$pop=="NAM",] # est3 is NAM
+head(res[res$pop=="EUR",]) # est1 is EUR 
+# est2 is AFR
+
+colnames(res)[3:5] <- paste(c("EUR","AFR","NAM"),"_pruned",sep="")
+colnames(res)[6:8] <- paste(c("EUR","AFR","NAM"),"_all",sep="")
+colnames(res)[9:11] <- paste(c("EUR","AFR","NAM"),"_pruned048",sep="")
+
+apply(res[,3:5],2,summary)
+#        EUR_pruned AFR_pruned NAM_pruned
+#Min.       0.00001    0.00001    0.00001
+#1st Qu.    0.21910    0.01495    0.11280
+#Median     0.41320    0.07324    0.34490
+#Mean       0.43850    0.17180    0.38960
+#3rd Qu.    0.64660    0.22880    0.63550
+#Max.       1.00000    1.00000    1.00000
+# write a table to use in svn at tower
+towrite <- res[,c(1,2,3:5)]
+colnames(towrite)[3:5] <- c("EUR","AFR","NAM")
+write.table(towrite,file="olga_admixture_xchr_results.txt")
+
+colnames(towrite)[2] <- "ref.pop"
+colnames(towrite)[3:5] <- c("Europe","Africa","America")
+write.csv(towrite,file="admixture_xchr_k3.csv",row.names=FALSE,quote=FALSE)
+
+library(ggplot2); library(reshape)
+
+set <- res[order(res[,3],res[,4],res[,5]),]
+set <- set[set$pop=="-",c("AFR_pruned","NAM_pruned","EUR_pruned")]
+
+set$id <- 1:nrow(set)
+set <- melt(set,id="id")
+
+pdf("xchr_barplot_admixture.pdf",width=14)
+ggplot(set,aes(id,value,fill=variable)) + geom_bar(stat="identity") +
+  ylab("X Chromosome Ancestry Proportion") + xlab("Sample") + 
+  ggtitle("ADMIXTURE Estimated X Chr Ancestry Proportions") + theme_bw()
+dev.off()
+
+# merge in subpop
+scan <- getobj("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData")
+
+res <- merge(res,pData(scan)[,c("scanID","gengrp6")],by="scanID",all.x=TRUE)
+res$gengrp6[is.na(res$gengrp6)] <- "Other"
+set <- res[order(res[,3],res[,4],res[,5]),]
+set <- set[set$pop=="-",c("AFR_pruned","NAM_pruned","EUR_pruned","gengrp6")]
+
+set$id <- 1:nrow(set)
+set <- melt(set,id=c("id","gengrp6"))
+
+pdf("xchr_barplot_admixture_byGengrp6.pdf",width=14)
+p =ggplot(set,aes(x=id,y=value,fill=variable)) 
+p  + geom_bar(stat="identity",position="stack") + facet_grid(.~gengrp6,scales="free",space="free")+
+  ylab("X Chromosome Ancestry Proportion") + xlab("Sample") + 
+  ggtitle("ADMIXTURE Estimated X Chr Ancestry Proportions") + theme_bw()
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 60. CAnD on the x vs auto proportions
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/olga_application/admixture")
+library(GWASTools)
+
+res <- read.table("olga_admixture_xchr_results.txt",header=TRUE,as.is=TRUE)
+colnames(res)[3:5] <- c("EUR.x","AFR.x","NAM.x")
+
+autos <- read.csv("genetic_diversity/plots/data/admixture_k3.csv",header=TRUE,as.is=TRUE)
+
+scan <- getobj("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData")
+res <- merge(res,pData(scan)[,c("scanID","gengrp6","unrelated.pcair.deg4")],by="scanID",all.x=TRUE)
+res$gengrp6[is.na(res$gengrp6)] <- "Other"
+
+
+# compare mean autosomal proportions to x chr
+# paired t-test, stratified self-id bkgrd group
+
+cand_res <- data.frame(matrix(NA,nrow=7,ncol=7))
+
+bkgs <- unique(res$gengrp6)
+colnames(cand_res) <- bkgs
+rownames(cand_res) <- c("n","chrx.NAM","chrx.EUR","chrx.AFR","pooled.NAM","pooled.EUR",
+                        "pooled.AFR")
+
+for(i in bkgs){
+  thisbkg <- res$scanID[is.element(res$gengrp6,i)&res$unrelated.pcair.deg4]
+  cand_res["n",colnames(cand_res)==i] <- length(thisbkg)
+  cand_res["chrx.EUR",colnames(cand_res)==i] <- t.test(res[is.element(res$scanID,thisbkg),"EUR.x"],
+       autos[is.element(autos$scanID,thisbkg),"Europe"],paired=TRUE)$p.value
+  cand_res["pooled.EUR",colnames(cand_res)==i] <- t.test(res[is.element(res$scanID,thisbkg),"EUR.x"],
+                                                       autos[is.element(autos$scanID,thisbkg),"Europe"])$p.value
+  
+  cand_res["chrx.NAM",colnames(cand_res)==i] <- t.test(res[is.element(res$scanID,thisbkg),"NAM.x"],
+                                                     autos[is.element(autos$scanID,thisbkg),"America"],paired=TRUE)$p.value
+  cand_res["pooled.NAM",colnames(cand_res)==i] <- t.test(res[is.element(res$scanID,thisbkg),"NAM.x"],
+                                                       autos[is.element(autos$scanID,thisbkg),"America"])$p.value
+  
+  cand_res["chrx.AFR",colnames(cand_res)==i] <- t.test(res[is.element(res$scanID,thisbkg),"AFR.x"],
+                                                     autos[is.element(autos$scanID,thisbkg),"Africa"],paired=TRUE)$p.value
+  cand_res["pooled.AFR",colnames(cand_res)==i] <- t.test(res[is.element(res$scanID,thisbkg),"AFR.x"],
+                                                       autos[is.element(autos$scanID,thisbkg),"Africa"])$p.value
+}
+
+write.csv(cand_res,file="CAnD_results_xvsAuto.csv",quote=FALSE)
+
+rm(list=ls())
+
+
+#####
+# 61. Get k0, k1, k2 for X KC F-F pairs
+
+library(GWASTools)
+library(SNPRelate)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+source("pcrelate.R")
+# call pcrelate with no x chr option to get k0, k1, k2 calculation
+# use unrel.set to be the same unrelated set used for PCA on the X chr
+# use scan.include to be the same set of individs used for PCA on the X chr
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+# make genoData object
+gdsobj <- GdsGenotypeReader("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/netCDF/subjects/OLGA_subj_geno.gds")
+genoData <- GenotypeData(gdsobj,scanAnnot=scan[scan$subj.plink,])
+
+unrel.set <- scan$scanID[scan$unrelated.pcair.deg4&is.na(scan$gengrp6.outliers)]
+scanIncl <- scan$scanID[is.na(scan$gengrp6.outliers)&scan$geno.cntl==0&scan$subj.plink & scan$sex=="F"]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10272 | 7515
+
+### need to exclude 13 people with an entirely missing x chr 
+# from chromosome.anomalies.csv file, they are study samples with x chr anomaly
+# thus, their entire x chr is filtered out. 
+
+chromAnoms <- read.csv("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/dbGaP/To_dbGaP/chromosome_anomalies/chromosome_anomalies.csv",
+                       header=TRUE,as.is=T)
+ids <- chromAnoms$scanID[chromAnoms$chromosome=="X"&chromAnoms$filter&chromAnoms$whole.chr&
+                           !is.element(substr(chromAnoms$SUBJECT_ID,1,2),"NA")]
+length(ids) # 13
+chromAnoms[is.element(chromAnoms$scanID,ids),] # perfect! exactly what we want
+
+length(scanIncl) # 7515
+scanIncl <- scanIncl[!is.element(scanIncl,ids)]
+length(scanIncl) # 7513
+
+snp.pruned <- get(load("olga_application/snp_sel_xChr_ldPruned.RData"))
+head(snp.pruned); length(snp.pruned) # 3600
+
+xPC <- get(load("olga_application/pca_prunedXsnps_10272unrel.RData"))
+
+pcMat <- xPC$vectors[,c(1:2)]
+dim(pcMat) # 12747 2
+
+pcMat <- pcMat[is.element(rownames(pcMat),scanIncl),]
+dim(pcMat) # 7513 2
+
+rel <- pcrelate(genoData, unrel.set=unrel.set, scan.include=scanIncl, Xchr=TRUE, pcMat=pcMat, snp.include=snp.pruned)
+names(rel)
+
+save(rel,file="olga_application/pcRelate_notpcRelateX_prunedXchr_xPC12adj.RData")
+
+rm(list=ls())
+
+##
+pcRes <- getobj("olga_application/pcRelate_notpcRelateX_prunedXchr_xPC12adj.RData")
+head(pcRes$kinship) 
+
+# plot k0 vs kin for kin>2^(-13/2)
+png("k2_kc_FFpairs.png")
+plot(pcRes$kinship$k2[pcRes$kinship$kin>2^(-13/2)],pcRes$kinship$kin[pcRes$kinship$kin>2^(-13/2)],
+     xlab="k2",ylab="kinship coef",main="k2 vs KC on X Chr for F-F pairs")
+dev.off()
+# hmm.
+
+png("k0_k1_FFpairs.png")
+plot(pcRes$kinship$k0[pcRes$kinship$kin>2^(-13/2)],pcRes$kinship$k1[pcRes$kinship$kin>2^(-13/2)],
+     xlab="k0",ylab="k1",main="k0 vs k1 on X Chr for F-F pairs")
+dev.off()
+
+# plot the expected values for each of the relationships
+# mom-daughter: kc=0.25, k2=0, k1=0.25, k0=0.75
+# full sisters: kc=3/8, k2=0.5 -- but could range anywhere from 0-1
+# maternal aunt-niece: kc=3/16, k2=0
+# maternal gma-gdaughter: kc=1/8, k2=0
+# paternal aunt-niece: kc=1/8, k2=0
+# paternal gma-gdaughter: kc=0.25, k2=0
+
+rm(list=ls())
+
+
+#####
+# 62. Make some plots of KC on X chr for MLM-X paper
+
+library(GWASTools)
+library(SNPRelate)
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+xpc <- getobj("olga_application/pcRelate_prunedXchr_xPC12adj.RData")
+xkc <- xpc$kinship
+xkc$ID12 <- paste(xkc$ID1,xkc$ID2)
+
+# load no Asians PC-Relate results
+pcres <- getobj("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/mconomos/results/relatedness/v13_without_asian2/pcrelate_allChr.RData")
+dim(pcres$kinship) # 81708936        7
+
+pcres <- pcres$kinship
+
+xsamp <- unique(xkc$ID1)
+length(xsamp) # 12733
+
+pcresSm <- pcres[is.element(pcres$ID1,xsamp),]
+pcresSm <- pcresSm[is.element(pcresSm$ID2,xsamp),]
+
+length(unique(pcresSm$ID1)) # 12732
+all(is.element(unique(pcresSm$ID1),xsamp)) # TRUE
+all(is.element(xsamp,unique(pcresSm$ID1))) # FALSE
+# dang, so we're off by one sample...
+
+xsamp[!is.element(xsamp,pcresSm$ID1)] # 99933
+
+# add in relationship
+# build up a new data frame with relationships included
+
+# number of relatives by each degree
+pcPO <- pcresSm$kin > 2^(-5/2) & pcresSm$k0 < 0.025; table(pcPO) # 1442 T
+pcFS <- pcresSm$kin > 2^(-5/2) & pcresSm$k0 >= 0.025 & pcresSm$k2 > 2^(-7/2); table(pcFS) # 695 T
+pcdeg2 <- pcresSm$kin < 2^(-5/2) & pcresSm$kin > 2^(-7/2) & pcresSm$k2 < 2^(-9/2); table(pcdeg2) # 580 T
+pcdeg3 <- pcresSm$kin < 2^(-7/2) & pcresSm$kin > 2^(-9/2); table(pcdeg3) # 484 T
+pcdeg4 <- pcresSm$kin < 2^(-9/2) & pcresSm$kin > 2^(-11/2); table(pcdeg4) # 940 T
+pcUnrel <- pcresSm$kin < 2^(-11/2); table(pcUnrel)
+
+po <- pcresSm[pcPO,]
+po$ID12 <- paste(po$ID1,po$ID2)
+po <- merge(po,xkc,by="ID12",suffixes=c(".auto",".x"),all.x=TRUE)
+po$relationship <- "PO"
+
+fs <- pcresSm[pcFS,]
+fs$ID12 <- paste(fs$ID1,fs$ID2)
+fs <- merge(fs,xkc,by="ID12",suffixes=c(".auto",".x"),all.x=TRUE)
+fs$relationship <- "FS"
+
+d2 <- pcresSm[pcdeg2,]
+d2$ID12 <- paste(d2$ID1,d2$ID2)
+d2 <- merge(d2,xkc,by="ID12",suffixes=c(".auto",".x"),all.x=TRUE)
+d2$relationship <- "Deg2"
+
+d3 <- pcresSm[pcdeg3,]
+d3$ID12 <- paste(d3$ID1,d3$ID2)
+d3 <- merge(d3,xkc,by="ID12",suffixes=c(".auto",".x"),all.x=TRUE)
+d3$relationship <- "Deg3"
+
+d4 <- pcresSm[pcdeg4,]
+d4$ID12 <- paste(d4$ID1,d4$ID2)
+d4 <- merge(d4,xkc,by="ID12",suffixes=c(".auto",".x"),all.x=TRUE)
+d4$relationship <- "Deg4"
+
+# merge in sex info
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+toPl <- rbind(po,fs,d2,d3,d4)
+
+toPl <- merge(toPl,pData(scan)[,c("scanID","sex")],all.x=TRUE,by.x="ID1.auto",by.y="scanID")
+toPl <- merge(toPl,pData(scan)[,c("scanID","sex")],all.x=TRUE,by.x="ID2.auto",by.y="scanID",suffixes=c(".1",".2"))
+
+toPl$sex <- paste(toPl$sex.1,toPl$sex.2,sep="-")
+toPl$sex[toPl$sex=="M-F"] <- "F-M"
+
+save(toPl,file="kc_res_pairsAuto.RData")
+
+library(ggplot2)
+
+pdf("kc_allRelationships_xkc_violin.pdf")
+toPl$relationship <- factor(toPl$relationship,levels=c("PO","FS","Deg2","Deg3","Deg4"))
+ggplot(toPl,aes(x=relationship,y=kin.x,col=sex)) + geom_violin() + theme_bw() + xlab("Relationship") + ylab("X Chr KC")
+dev.off()
+
+pdf("kc_allRelationships_xkc.pdf")
+toPl$relationship <- factor(toPl$relationship,levels=c("PO","FS","Deg2","Deg3","Deg4"))
+ggplot(toPl,aes(x=relationship,y=kin.x,col=sex)) + geom_boxplot() + theme_bw() + xlab("Relationship") + ylab("X Chr KC")
+dev.off()
+
+# look at po, fs in detail
+pdf("kc_pos_xkc.pdf")
+toPlSm <- toPl[toPl$relationship=="PO",]
+ggplot(toPlSm,aes(y=kin.auto,x=kin.x,col=sex)) + geom_point() + theme_bw() + xlab("X Chr KC") + ylab("Auto KC")
+dev.off()
+
+pdf("kc_fss_xkc.pdf")
+toPlSm <- toPl[toPl$relationship=="FS",]
+ggplot(toPlSm,aes(y=kin.auto,x=kin.x,col=sex)) + geom_point() + theme_bw() + xlab("X Chr KC") + ylab("Auto KC")
+dev.off()
+
+rm(list=ls())
+
+
+# pairs identified as relatives
+idx <- which(pcres$kinship$kin > 2^(-11/2)); length(idx) #4240
+
+summary(pcres$kinship$kin[-idx])
+#      Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
+#-1.690e-02 -1.385e-03 -8.017e-06 -7.000e-09  1.375e-03  2.208e-02 
+
+brks <- seq(from = min(pcres$kinship$kin[-idx]), to = max(pcres$kinship$kin[-idx]), length=11)
+unrel.idx <- NULL
+for(i in 1:10){
+  print(i)
+  tmp <- which(pcres$kinship$kin >= brks[i] & pcres$kinship$kin <= brks[(i+1)]); print(length(tmp))
+  if(length(tmp) > 100){
+    unrel.idx <- c(unrel.idx, sample(tmp, size=100))
+  }else{
+    unrel.idx <- c(unrel.idx, tmp)
+  }
+}
+length(unrel.idx) # 908
+summary(pcres$kinship$kin[unrel.idx])
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#-0.016900 -0.003177  0.003296  0.004419  0.012670  0.022080 
+
+
+# assign colors for plotting based on my PC relatedness estimates
+clr <- rep("#65171775",length(idx))
+clr[pcFS[idx]] <- "#0000ff50"
+clr[pcPO[idx]] <- "#ff000050"
+clr[pcdeg2[idx]] <- "#ff00ff50"
+clr[pcdeg3[idx]] <- "#00ff0050"
+clr[pcdeg4[idx]] <- "#ff650050"
+# add in unrelateds
+clr <- c(clr, rep("#00000030", length(unrel.idx)))
+
+pdf("k0_v_kin_new.pdf")
+plot(pcres$kinship$k0[c(idx, unrel.idx)], pcres$kinship$kin[c(idx, unrel.idx)], pch=20, col=clr, xlab=expression(paste("PC-Relate ",k[0]," Estimate")), ylab="PC-Relate Kinship Estimate")
+segments(0,-1,0,0.25, lty=2, col=2); segments(-1,0.25,0,0.25, lty=2, col=2)
+segments(0.25,-1,0.25,0.25, lty=2, col=4); segments(0,0.25,0.25,0.25, lty=2, col=4)
+segments(0.5,-1,0.5,0.125, lty=2, col=6); segments(-1,0.125,0.5,0.125, lty=2, col=6)
+segments(0.75,-1,0.75,0.0625, lty=2, col=3); segments(-1,0.0625,0.75,0.0625, lty=2, col=3)
+segments(0.875,-1,0.875,0.03125, lty=2, col="orange"); segments(-1,0.03125,0.875,0.03125, lty=2, col="orange")
+segments(1,-1,1,0, lty=2); segments(-1,0,1,0, lty=2)
+abline(0.25,-0.25,col="gray");
+dev.off()
+
+plot(pcres$kinship$k0[c(idx,unrel.idx)], pcres$kinship$k1[c(idx,unrel.idx)], pch=20, col=clr, xlab="PC k0", ylab="PC Kinship")
+plot(pcres$kinship$k0[c(idx,unrel.idx)], pcres$kinship$k2[c(idx,unrel.idx)], pch=20, col=clr, xlab="PC k0", ylab="PC Kinship")
+
+rm(list=ls())
+
+
+#####
+# 63. Calculate genomic inf across autos only, compare pvalues
+
+library(QCpipeline)
+library(GWASTools)
+
+setwd("/projects/geneva/geneva_sata/caitlin/olga_xchr_assoc/Assoc/")
+
+# read in xchr results, the autosomal model
+(mac.thresh <- 30)
+totalRes <- data.frame(matrix(NA,nrow=2128491,ncol=4))
+ct <- 1
+n <- 12489
+maf.eff <- format(quadSolveMAF(mac.thresh, n), digits=3)
+
+for(i in 1:22){
+  assc <- getobj(paste("assoc_auto_316987_chr",i,".RData",sep=""))
+  
+  filt.imp <- which(assc$type %in% 0)
+  assc$composite.filter <- TRUE
+  assc$maf.filt <- assc$effN > mac.thresh
+  filt.obs <- which(assc$type %in% c(2,3))
+  
+  filt.obs.maf <- intersect(filt.obs, which(assc$maf.filt))
+  # this is the filter i want
+  
+  assc <- assc[filt.obs.maf,]
+  
+  totalRes[ct:(ct+nrow(assc)-1),] <- assc[,c("snpID","chromosome","Stat","pval")]
+  ct <- ct+nrow(assc)
+}
+
+totalRes <- totalRes[!is.na(totalRes$X1),]
+stat = totalRes[,"X3"]
+stat <- pmax(stat, 0)
+
+(lambda_simpleMLM <- calculateLambda(stat, df=1)) # 1.04951 
+
+##
+# do the same exercise for the other assoc test results
+mlmX <- data.frame(matrix(NA,nrow=2128491,ncol=4))
+ct <- 1
+
+maxN <- rep(NA,22)
+for(i in 1:22){
+  assc <- getobj(paste("assoc_316987_chr",i,".RData",sep=""))
+  filt.imp <- which(assc$type %in% 0)
+  assc$composite.filter <- TRUE
+  assc$maf.filt <- assc$effN > mac.thresh
+  filt.obs <- which(assc$type %in% c(2,3))
+  
+  filt.obs.maf <- intersect(filt.obs, which(assc$maf.filt))
+  # this is the filter i want
+  
+  assc <- assc[filt.obs.maf,]
+  
+  mlmX[ct:(ct+nrow(assc)-1),] <- assc[,c("snpID","chromosome","Stat","pval")]
+  ct <- ct+nrow(assc)
+}
+
+mlmX <- mlmX[!is.na(mlmX$X1),]
+stat = mlmX[,"X3"]
+stat <- pmax(stat, 0)
+
+(lambda_MLMx <- calculateLambda(stat, df=1)) # 1.04839
+
+mlmX$pval_simple <- totalRes[,"X4"]
+colnames(mlmX)[4] <- "pval"
+
+# make a plot of each pval comparing mlm-x to simple mlm-x, across the autosomes
+library(ggplot2)
+png("../Plots/autoPvals_mlmX_vsAutoModel.png")
+ggplot(mlmX,aes(-log10(pval),-log10(pval_simple))) + geom_point(aes(alpha=0.5)) + 
+  labs(y=expression(-log[10]*"(Simple MLM p-value)"), x=expression(-log[10]*"(MLM-X p-value)")) + 
+  geom_abline(intercept=0,slope=1) + theme_bw() + theme(legend.position="none")
+dev.off()
+
+cor(-log10(mlmX$pval),-log10(mlmX$pval_simple)) # 0.9972682
+
+rm(list=ls())
+
+
+#####
+# 64. Rerun PC-AiR, PC-Relate iterations w 3rd deg relatives
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+snp.pruned <- get(load("olga_application/snp_sel_xChr_ldPruned.RData"))
+head(snp.pruned); length(snp.pruned) # 3600
+
+# make genoData object
+gdsobj <- GdsGenotypeReader("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/netCDF/subjects/OLGA_subj_geno.gds")
+genoData <- GenotypeData(gdsobj,scanAnnot=scan[scan$subj.plink,])
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&!is.element(scan$gengrp6.outliers, "AsianOutliers")&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[!is.element(scan$gengrp6.outliers, "AsianOutliers")&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+pc <- pcair(genoData,unrel.set=unrel.set,Xchr=TRUE,snp.include=snp.pruned,scan.include=scanIncl)
+save(pc,file="olga_application/pca_prunedXsnps_10272unrel12784rel_unrelDeg3.RData")
+
+# make a par coords plot to check still 1-2 to include
+
+pc_colors <- rep("black",length(scanIncl))
+scan <- scan[is.element(scan$scanID,scanIncl),]
+pc_colors[scan$race.cat=="Mexican"] <- "goldenrod"
+pc_colors[scan$race.cat=="CentralAmerican"] <- "red"
+pc_colors[scan$race.cat=="SouthAmerican"] <- "magenta"
+pc_colors[scan$race.cat=="PuertoRican"] <- "green"
+pc_colors[scan$race.cat=="Cuban"] <- "blue"
+pc_colors[scan$race.cat=="Dominican"] <- "burlywood"
+
+pdf("tmp_parCords.pdf",width=14)
+#pc$vectors[,1] <- pc$vectors[,1]*-1
+parcoord(pc$vectors,col=pc_colors)
+dev.off()
+
+## run pc-relate adj for the pc's from above
+xPC <- get(load("olga_application/pca_prunedXsnps_10272unrel12784rel_unrelDeg3.RData"))
+
+pcMat <- xPC$vectors[,c(1:2)]
+dim(pcMat) # 12784 2
+
+png("xpc_12_3rdDeg.png")
+plot(-pcMat[,1],pcMat[,2],xlab="EV 1", ylab="EV 2",col=pc_colors,pch=19)
+legend("topleft",c("CentralAmerican","Cuban","Dominican","Mexican","PuertoRican","SouthAmerican","Other/Unknown"),pch=20,
+       col=c("red","blue","burlywood","goldenrod","green","magenta","black"),cex=0.8)
+dev.off()
+
+png("xpc_12.png")
+plot(xPC)
+dev.off()
+
+png("xpc_34.png")
+plot(xPC,3,4)
+dev.off()
+
+
+oldPCs <- get(load("olga_application/pca_prunedXsnps_10272unrel.RData"))
+old12 <- oldPCs$vectors[,c(1:2)]
+
+png("xpc_12_3rdDegvs4th_ev1.png")
+plot(pcMat[is.element(rownames(pcMat),rownames(old12)),1],old12[,1],xlab="4th Deg",ylab="3rd Deg")
+abline(0,1)
+dev.off()
+
+png("xpc_12_3rdDegvs4th_ev2.png")
+plot(pcMat[is.element(rownames(pcMat),rownames(old12)),2],old12[,2],xlab="4th Deg",ylab="3rd Deg")
+abline(0,1)
+dev.off()
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&!is.element(scan$gengrp6.outliers, "AsianOutliers")&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[!is.element(scan$gengrp6.outliers, "AsianOutliers")&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+### need to exclude 13 people with an entirely missing x chr 
+# from chromosome.anomalies.csv file, they are study samples with x chr anomaly
+# thus, their entire x chr is filtered out. 
+
+chromAnoms <- read.csv("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/dbGaP/To_dbGaP/chromosome_anomalies/chromosome_anomalies.csv",
+                       header=TRUE,as.is=T)
+ids <- chromAnoms$scanID[chromAnoms$chromosome=="X"&chromAnoms$filter&chromAnoms$whole.chr&
+                           !is.element(substr(chromAnoms$SUBJECT_ID,1,2),"NA")]
+length(ids) # 13
+chromAnoms[is.element(chromAnoms$scanID,ids),] # perfect! exactly what we want
+
+length(scanIncl) # 12784
+scanIncl <- scanIncl[!is.element(scanIncl,ids)]
+length(scanIncl) # 12771
+
+unrel.set <- unrel.set[!is.element(unrel.set,ids)]
+length(unrel.set) # 10614
+
+# take these individs out of pcMat too
+pcMat <- pcMat[is.element(rownames(pcMat),scanIncl),]
+dim(pcMat) # 12771 2
+
+rel <- pcrelate(genoData, unrel.set=unrel.set, scan.include=scanIncl, Xchr=TRUE, pcMat=pcMat,
+                snp.include=snp.pruned)
+names(rel)
+
+save(rel,file="olga_application/pcRelate_Xchr_xPC12adj_unrel3Deg.RData")
+
+## make into matrix
+tmp <- matrix(NA,nrow=length(scanIncl),ncol=length(scanIncl))
+length(tmp[lower.tri(tmp,diag=FALSE)]) # 81071011
+
+kc <- rel$kinship
+length(kc[,"kin"]) # 81071011
+tmp[lower.tri(tmp,diag=FALSE)] <- kc[,"kin"]
+
+# mirror to upper triangle
+tmp[upper.tri(tmp,diag=FALSE)] <- t(tmp)[upper.tri(tmp,diag=FALSE)]
+
+rownames(tmp) <- scanIncl
+colnames(tmp) <- scanIncl
+
+diag(tmp) <- 1 + rel$inbreed$f
+
+save(tmp,file="olga_application/kcMat_xchr_xPC12adj_unrel3Deg.RData")
+
+rm(list=ls())
+
+
+#####
+# 65. Manh of MLM-X, simple MLM X chr results in one png file
+
+library(QCpipeline); library(OLGApipeline)
+library(GWASTools)
+
+setwd("/projects/geneva/geneva_sata/caitlin/olga_xchr_assoc/Assoc/")
+
+# read in xchr results, the autosomal model
+(mac.thresh <- 30)
+n <- 12490
+maf.eff <- format(quadSolveMAF(mac.thresh, n), digits=3)
+
+assc <- getobj("assoc_auto_316987_chr23.RData")
+  
+  filt.imp <- which(assc$type %in% 0)
+  assc$composite.filter <- TRUE
+  assc$maf.filt <- assc$effN > mac.thresh
+  filt.obs <- which(assc$type %in% c(2,3))
+  
+  filt.obs.maf <- intersect(filt.obs, which(assc$maf.filt))
+  # this is the filter i want
+  
+  assc <- assc[filt.obs.maf,]
+totalRes <- assc
+  
+##
+# do the same exercise for the other assoc test results
+assc <- getobj("assoc_316987_chr23.RData")
+
+  filt.imp <- which(assc$type %in% 0)
+  assc$composite.filter <- TRUE
+  assc$maf.filt <- assc$effN > mac.thresh
+  filt.obs <- which(assc$type %in% c(2,3))
+  
+  filt.obs.maf <- intersect(filt.obs, which(assc$maf.filt))
+  # this is the filter i want
+  
+  assc <- assc[filt.obs.maf,]
+  
+mlmX <- assc
+
+# make a plot of each pval comparing mlm-x to simple mlm-x, across the autosomes
+library(ggplot2)
+library(gridExtra); library(RGraphics)
+
+png("../Plots/autoPvals_mlmX_vsAutoModel.png",width=1080, height=760)
+mtxt <- ""
+par(mfrow=c(2,1),mar=c(5,5,4,3)+0.1, lwd=1.5, cex.lab=1.5, cex.main=1.5, cex.sub=1.5, oma=c(0,0,length(mtxt)+0.1,0))
+manhattanPlot(totalRes$pval, totalRes$chromosome)
+mtext("A", side=3, line=0.75,adj=0,cex=2)
+manhattanPlot(mlmX$pval, mlmX$chromosome)
+mtext("B", side=3, line=0.75,adj=0,cex=2)
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 66. Run pcairPartition() incl & excl the autosomal KING divMat
+
+# decide if we should include the divMat in the next PC-AiR run
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+library(ggplot2)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x")
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&!is.element(scan$gengrp6.outliers, "AsianOutliers")&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[!is.element(scan$gengrp6.outliers, "AsianOutliers")&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+# load king estimates
+kingibd <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/amstilp/results/ibd/v04_build37_study_control/ibd.v4.RData")); class(kingibd)
+dim(kingibd$kinship) # 14160 14160 - different dimensions
+# contains a bunch of extras (dups, controls, no post)
+
+# assign sample.id to names of matrix
+length(kingibd$sample.id) # 14160
+rownames(kingibd$kinship) <- kingibd$sample.id
+colnames(kingibd$kinship) <- kingibd$sample.id
+kingibd$kinship[1:5,1:5]
+
+thresh <- 2^(-9/2)
+
+# load kinship matrix, adj for x chr PC 1-2
+kinMat <- getobj("olga_application/kcMat_xchr_xPC12adj_unrel3Deg.RData")
+
+pdf("xkc_hist.pdf")
+hist(as.vector(kinMat[lower.tri(kinMat,diag=FALSE)]),breaks=100,
+     main="X KC for 12,771 Pairs",xlab="X KC")
+dev.off()
+
+pdf("xkc_hist_trunc.pdf")
+hist(as.vector(kinMat[lower.tri(kinMat,diag=FALSE)]),ylim=c(0,1000),breaks=100,
+     main="X KC for 12,771 Pairs",xlab="X KC")
+dev.off()
+
+rels <- apply(kinMat,1,function(x){sum(x>thresh)})
+
+kinMat.unrelAuto <- kinMat[rownames(kinMat)%in%unrel.set,colnames(kinMat)%in%unrel.set]
+dim(kinMat.unrelAuto) # 10614 10614
+
+summary(as.vector(kinMat.unrelAuto[lower.tri(kinMat.unrelAuto,diag=FALSE)]))
+
+pdf("xkc_unrel_hist.pdf")
+hist(as.vector(kinMat.unrelAuto[lower.tri(kinMat.unrelAuto,diag=FALSE)]),breaks=100,
+     main="X KC for 10,614 Unrel Pairs", xlab="X KC")
+dev.off()
+
+pdf("xkc_unrel_hist_trunc.pdf")
+hist(as.vector(kinMat.unrelAuto[lower.tri(kinMat.unrelAuto,diag=FALSE)]),ylim=c(0,1000),breaks=100,
+     main="X KC for 10,614 Unrel Pairs", xlab="X KC")
+dev.off()
+
+# stratify by ff, fm, mm pairs
+kinRes <- getobj("olga_application/pcRelate_Xchr_xPC12adj_unrel3Deg.RData")
+kc <- kinRes$kinship
+kc.unrelAuto <- kc[kc$ID1 %in% unrel.set & kc$ID2 %in% unrel.set,]
+
+kc.unrelAuto <- merge(kc.unrelAuto,pData(scan)[,c("scanID","sex")],by.x="ID1",by.y="scanID",all.x=TRUE)
+kc.unrelAuto <- merge(kc.unrelAuto,pData(scan)[,c("scanID","sex")],by.x="ID2",by.y="scanID",all.x=TRUE,suffixes=c(".1",".2"))
+kc.unrelAuto$sexPair <- paste(kc.unrelAuto$sex.1,kc.unrelAuto$sex.2,sep="-")
+kc.unrelAuto$sexPair[kc.unrelAuto$sexPair=="M-F"] <- "F-M"
+
+pdf("xkc_unrel_hist_bySexPair.pdf",width=14,height=9)
+ggplot(kc.unrelAuto,aes(x=kin)) + geom_histogram(binwidth=0.003) + 
+  facet_grid(~sexPair) + theme_bw() + xlab("X KC") 
+dev.off()
+
+pdf("xkc_unrel_hist_bySexPair_trunc.pdf",width=14,height=9)
+ggplot(kc.unrelAuto,aes(x=kin)) + geom_histogram(binwidth=0.003) + 
+  facet_grid(~sexPair) + theme_bw() + xlab("X KC") + coord_cartesian(ylim=c(0, 1000))
+dev.off()
+
+# only plot the FF pairs
+pdf("xkc_unrel_hist_FFpairs_trunc.pdf")
+ggplot(kc.unrelAuto[sexPair=="F-F",],aes(x=kin)) + geom_histogram(binwidth=0.003) + 
+  theme_bw() + xlab("X KC") + coord_cartesian(ylim=c(0, 1000)) + ggtitle("X KC for F-F Unrelated Pairs")
+dev.off()
+
+kinMat4th <- getobj("olga_application/kcMat_prunedxchr_xPC12adj.RData")
+kinMatCAm <- kinMat[rownames(kinMat)%in%rownames(kinMat4th),colnames(kinMat)%in%colnames(kinMat4th)]
+
+png("tmp_comparison.png")
+plot(kinMat4th[lower.tri(kinMat4th,diag=F)],kinMatCAm[lower.tri(kinMatCAm,diag=F)],
+     xlab="4th Deg X KC",ylab="3rd Deg X KC",col="#00000030")
+abline(0,1)
+dev.off()
+
+divMat <- kingibd$kinship
+inclIdx <- is.element(rownames(divMat),rownames(kinMat))
+divMat <- divMat[inclIdx,inclIdx]
+
+ids <- pcairPartition(kinMat=kinMat,divMat=divMat,kin.thresh=thresh,div.thresh=-thresh) # took about 2.5 hrs
+save(ids,file="olga_application/unrelIDs_kinMat_divMat_unrelDeg3.RData")
+names(ids)
+length(ids[[1]]); length(ids[[2]]) # 12074 | 697
+divMat <- ids
+
+ids <- pcairPartition(kinMat=kinMat,kin.thresh=thresh,div.thresh=-thresh) # took about 2.5 hrs
+save(ids,file="olga_application/unrelIDs_kinMatOnly_unrelDeg3.RData")
+names(ids) # rels | unrels
+length(ids[[1]]); length(ids[[2]]) # 12072 | 699
+kinMat <- ids
+
+sum(is.element(divMat$unrel,kinMat$unrel)) # 386
+sum(is.element(kinMat$unrel,divMat$unrel)) # 386
+
+library(VennDiagram)
+png("tmp_venn.png")
+venn.diagram(x=list("kinMatOnly"=as.integer(kinMat$unrel),"inclDivMat"=as.integer(divMat$unrel)),filename="tmp_venn.png")
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 67. Run PC-Relate on set of 3600 SNPs, not on X chr
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/")
+source("pcrelate.R")
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+snp.pruned <- get(load("olga_application/snp_sel_auto_ldPruned.RData"))
+length(snp.pruned) # 152391
+
+snp <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_HCHS_Custom_15041502_B3_all37_v25_AMS.RData"))
+snpChrs <- snp$chromosome[is.element(snp$snpID,snp.pruned)]
+table(snpChrs) # chr 19 has 4125, that'll work
+
+snp.pruned <- snp.pruned[snpChrs==19] 
+length(snp.pruned) # 4125
+
+# make genoData object
+gdsobj <- GdsGenotypeReader("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/netCDF/subjects/OLGA_subj_geno.gds")
+genoData <- GenotypeData(gdsobj,scanAnnot=scan[scan$subj.plink,])
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&is.na(scan$gengrp6.outliers)&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[is.na(scan$gengrp6.outliers)&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+## run pc-relate adj for auto pcs 1-5
+autoPC <- get(load("olga_application/pca_prunedAutosnps_10272unrelPlusRel.RData"))
+
+pcMat <- autoPC$eigenvect[,c(1:5)]
+dim(pcMat) # 12747 2
+rownames(pcMat) <- autoPC$sampleInfo$sample.id
+
+### need to exclude 13 people with an entirely missing x chr 
+# from chromosome.anomalies.csv file, they are study samples with x chr anomaly
+# thus, their entire x chr is filtered out. 
+
+chromAnoms <- read.csv("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/dbGaP/To_dbGaP/chromosome_anomalies/chromosome_anomalies.csv",
+                       header=TRUE,as.is=T)
+ids <- chromAnoms$scanID[chromAnoms$chromosome=="X"&chromAnoms$filter&chromAnoms$whole.chr&
+                           !is.element(substr(chromAnoms$SUBJECT_ID,1,2),"NA")]
+length(ids) # 13
+chromAnoms[is.element(chromAnoms$scanID,ids),] # perfect! exactly what we want
+
+length(scanIncl) # 12784
+scanIncl <- scanIncl[!is.element(scanIncl,ids)]
+length(scanIncl) # 12771
+
+unrel.set <- unrel.set[!is.element(unrel.set,ids)]
+length(unrel.set) # 10614
+
+# take these individs out of pcMat too
+pcMat <- pcMat[is.element(rownames(pcMat),scanIncl),]
+dim(pcMat) # 12734 5
+
+# need to order pcMat the same as scanIncl
+scanIncl <- scanIncl[is.element(scanIncl,rownames(pcMat))]
+
+pcMat <- cbind(pcMat,as.integer(rownames(pcMat)))
+pcMatTmp <- pcMat[order(pcMat[,6]),]
+
+pcMat <- pcMatTmp[,c(1:5)]
+
+unrel.set <- unrel.set[is.element(unrel.set,scanIncl)]
+
+rel <- pcrelate(genoData, unrel.set=unrel.set, scan.include=scanIncl, Xchr=FALSE, pcMat=pcMat,
+                snp.include=snp.pruned)
+names(rel)
+
+save(rel,file="olga_application/pcRelate_chr19_4125snps_autoPC15adj_unrel3Deg.RData")
+
+## make into matrix
+tmp <- matrix(NA,nrow=length(scanIncl),ncol=length(scanIncl))
+length(tmp[lower.tri(tmp,diag=FALSE)]) # 81071011
+
+kc <- rel$kinship
+length(kc[,"kin"]) # 81071011
+tmp[lower.tri(tmp,diag=FALSE)] <- kc[,"kin"]
+
+# mirror to upper triangle
+tmp[upper.tri(tmp,diag=FALSE)] <- t(tmp)[upper.tri(tmp,diag=FALSE)]
+
+rownames(tmp) <- scanIncl
+colnames(tmp) <- scanIncl
+
+diag(tmp) <- 1 + rel$inbreed$f
+
+save(tmp,file="olga_application/kcMat_chr19_4125snps_autoPC15adj_unrel3Deg.RData")
+
+rm(list=ls())
+
+
+#####
+# 68. Run regression to check corr of auto SNPs with X PCs
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+library(lmtest)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/")
+
+# run 2 models: 
+# auto SNP ~ auto PC 1-5
+# auto SNP ~ auto PC 1-5 + X chr PC 1-2
+
+scan <- getobj("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData")
+head(pData(scan)) 
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&!is.element(scan$gengrp6.outliers,"AsianOutliers")&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[!is.element(scan$gengrp6.outliers,"AsianOutliers")&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+# adj for auto PCs 1-5
+
+db <- getDb('olga_analysis')
+evs <- dbGetEvData(db, evSetID=2, evNums=1:5)
+dbDisconnect(db)
+
+head(evs); dim(evs) # 12784 5
+
+xpc <- getobj("olga_application/pca_prunedXsnps_10272unrel12784rel_unrelDeg3.RData")
+dim(xpc$vectors) # 12784 10
+
+allequal(rownames(xpc$vectors),evs$scan_id) # TRUE; great!
+
+allequal(scan$scanID[is.element(scan$scanID,scanIncl)],rownames(xpc$vectors)) # TRUE
+scan$autoEV1[is.element(scan$scanID,scanIncl)] <- evs$EV1
+scan$autoEV2[is.element(scan$scanID,scanIncl)] <- evs$EV2
+scan$autoEV3[is.element(scan$scanID,scanIncl)] <- evs$EV3
+scan$autoEV4[is.element(scan$scanID,scanIncl)] <- evs$EV4
+scan$autoEV5[is.element(scan$scanID,scanIncl)] <- evs$EV5
+
+scan$xEV1[is.element(scan$scanID,scanIncl)] <- xpc$vectors[,1]
+scan$xEV2[is.element(scan$scanID,scanIncl)] <- xpc$vectors[,2]
+  
+saveas(scan,"olga_application/scanAnnot_lrtest.RData")
+
+rm(list=ls())
+
+##
+# called in batch:
+# lmtest_snps.R and .Rout for each chr 1-22 in parallel
+# saved lrTest_autoSNPs/lrRes_chrXX.txt for each chr
+# need to cat those in unix, make some plots
+
+## 
+# called in batch:
+# lmtest_plotRes.R and .Rout
+
+
+#####
+# 69. Parse chr 19 PC-Relate results
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+library(ggplot2)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/")
+
+kc <- get(load("olga_application/pcRelate_chr19_4125snps_autoPC15adj_unrel3Deg.RData"))
+names(kc)
+kin <- kc$kinship
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+
+head(pData(scan)) 
+unrel.set <- scan$scanID[scan$unrelated.pcair&is.na(scan$gengrp6.outliers)&
+                           scan$geno.cntl==0&scan$subj.plink]
+
+kc.unrelAuto <- kin[is.element(kin$ID1,unrel.set)&is.element(kin$ID2,unrel.set),]
+dim(kc.unrelAuto)
+head(kc.unrelAuto)
+summary(kc.unrelAuto$kin)
+#      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#-0.098210 -0.006858  0.001194  0.001345  0.009370  0.311000 
+
+pdf("kc_chr19_autounrel_hist.pdf")
+ggplot(kc.unrelAuto,aes(x=kin)) + geom_histogram(binwidth=0.003) + xlab("KC") + 
+  ggtitle("KC calculated from 4,125 Chr 19 SNPs\nAuto Unrel Pairs") + theme_bw() 
+dev.off()
+
+pdf("kc_chr19_autounrel_hist_trunc.pdf")
+ggplot(kc.unrelAuto,aes(x=kin)) + geom_histogram(binwidth=0.003) + xlab("KC") + coord_cartesian(ylim=c(0, 1000)) +
+  ggtitle("KC calculated from 4,125 Chr 19 SNPs\nAuto Unrel Pairs") + theme_bw() 
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 70. Plot distribution of X chr markers across the chr
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+library(ggplot2)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/")
+source("pcrelate.R")
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+snp.pruned <- get(load("olga_application/snp_sel_xChr_ldPruned.RData"))
+length(snp.pruned) # 3600
+
+snp <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_HCHS_Custom_15041502_B3_all37_v25_AMS.RData"))
+
+xchrA <- pData(snp[snp$chromosome==23,])
+dim(xchrA)
+range(xchrA$position) # 2699676 154921994
+# it's 155,270,560 bp long, accd to ucsc genome browser
+
+pseudoautosomal.hg19
+#       chrom region start.base  end.base
+#X.PAR1     X   PAR1      60001   2699520
+#X.PAR2     X   PAR2  154931044 155260560
+#X.XTR      X    XTR   88395830  92583067
+
+
+# Plot the densities of snps in the bed file for each chr seperately
+snpDensity <- ggplot(xchrA) + 
+  geom_rect(aes(xmin=60001, xmax=2699520, ymin=0, ymax=Inf),fill='gray80', alpha=0.8) +
+  geom_rect(aes(xmin=154931044, xmax=155260560, ymin=0,ymax=Inf),fill='gray80', alpha=0.8) +
+  geom_rect(aes(xmin=88395830, xmax=92583067, ymin=0,ymax=Inf),fill='gray80', alpha=0.8) +
+  geom_histogram(aes(x=position),binwidth=1e4) + # pick a binwidth that is not too small 
+  ggtitle("Density of 55,905 X Chr SNPs Across hg19\nBinned by 1e4 bases") +
+  xlab("Position") + 
+  ylab("SNP density") + 
+  theme_bw() + 
+  annotate("text", x = 1319760, y = 30, label = "PAR1") + 
+  annotate("text", x = (164758+154931044), y = 30, label = "PAR2") + 
+  annotate("text", x = (2093618+88395830), y = 30, label = "XTR") + 
+  annotate("text", x=60.6*1e6, y=10, label="centromere",angle=90)
+
+# save the plot to .png file
+png("chrX_density.png",width=960)
+print(snpDensity)
+dev.off()
+
+# do for chr 19 for comparison
+chr19 <- pData(snp[snp$chromosome==19,])
+png("chr19_density.png",width=960)
+ggplot(chr19) + geom_histogram(aes(x=position),binwidth=1e4) +
+  ggtitle("Density of 52,890 Chr 19 SNPs Across hg19\nBinned by 1e4 bases") +
+  xlab("Position") + ylab("SNP density") + theme_bw() +
+  annotate("text",x=26.5*1e6,y=10,label="centromere",angle=90)
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 71. QQ plots for simple MLM and MLM-X on RBC trait, with lambda_GC in legend
+
+library(QCpipeline); library(OLGApipeline)
+library(GWASTools)
+library(dplyr); library(readr)
+library(tidyr)
+
+setwd("/projects/geneva/geneva_sata/caitlin/olga_xchr_assoc/Assoc/")
+
+# read in xchr results, the autosomal model
+(mac.thresh <- 30)
+n <- 12490
+maf.eff <- format(quadSolveMAF(mac.thresh, n), digits=3)
+
+assc <- getobj("assoc_auto_316987_chr23.RData")
+
+filt.imp <- which(assc$type %in% 0)
+assc$composite.filter <- TRUE
+assc$maf.filt <- assc$effN > mac.thresh
+filt.obs <- which(assc$type %in% c(2,3))
+
+filt.obs.maf <- intersect(filt.obs, which(assc$maf.filt))
+# this is the filter i want
+
+assc <- assc[filt.obs.maf,]
+totalRes <- assc
+
+##
+# do the same exercise for the other assoc test results
+assc <- getobj("assoc_316987_chr23.RData")
+
+filt.imp <- which(assc$type %in% 0)
+assc$composite.filter <- TRUE
+assc$maf.filt <- assc$effN > mac.thresh
+filt.obs <- which(assc$type %in% c(2,3))
+
+filt.obs.maf <- intersect(filt.obs, which(assc$maf.filt))
+# this is the filter i want
+
+assc <- assc[filt.obs.maf,]
+
+mlmX <- assc
+
+allequal(mlmX$snpID,totalRes$snpID) # TRUE
+mlmX$method <- "MLM-X"
+totalRes$method <- "simple MLM"
+
+res <- rbind(mlmX[,c("chromosome","snpID","method","pval")],
+             totalRes[,c("chromosome","snpID","method","pval")])
+res <- tbl_df(res)
+
+res <- mutate(res,pval_10=-log10(pval))
+res_method <- group_by(res,method)
+res_method <- mutate(res_method,n=n())
+n <- 43868
+a <- 1:n
+b <- a/n
+x <- -log10(b)
+res_method <- mutate(res_method,spval=-log10(sort(pval)))
+res_method <- mutate(res_method,x=x)
+
+# make a plot of each pval comparing mlm-x to simple mlm-x, across the autosomes
+library(ggplot2)
+library(gridExtra); library(RGraphics)
+
+txt <- paste("lambda[GC] == 1.116~simple~MLM")
+txt2 <- paste("lambda[GC] == 1.043~MLM-X")
+
+png("../Plots/xChrQQ_mlmX_vsAutoModel.png",width=1080,height=760)
+ggplot(res_method,aes(x,spval,color=method)) + geom_point(aes(color=method,name=" ")) +
+  xlab(expression(paste(-log[10],"(expected P)"))) +
+  ylab(expression(paste(-log[10], "(observed P)"))) +
+  theme_bw() + geom_abline(intercept=0) +
+  theme(axis.text=element_text(size=12),axis.title=element_text(size=18,face="bold"),
+        legend.text = element_text(size = 18),legend.key = element_rect(colour = "white")) +
+  annotate("text", x = 0.5, y = 16.8, label = txt,parse=TRUE,size=6) +
+  annotate("text", x = 0.42, y = 16, label = txt2, parse=TRUE,size=6) 
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 72. Run regression to check corr of X chr SNPs with auto PCs
+
+# run 2 models: 
+# x SNP ~ x PC 1-2
+# x SNP ~ x PC 1-2 + auto PC 1-5
+
+##
+# called in batch:
+# lmtest_snps_xchr.R and .Rout for chr 23 in parallel
+# saved lrTest_autoSNPs/lrRes_chrXX.txt for each chr
+# need to cat those in unix, make some plots
+
+## 
+# called in batch:
+# plot_qq_manh_xchr.R
+
+
+#####
+# 73. Make barplots of var comp estimates w and w/o X chr KC for RBC
+
+library(ggplot2)
+library(tidyr); library(dplyr)
+
+mlmX <- data.frame("block group"=0.00396,"household"=0.04950,
+                   "autosomal kinship"=0.28453,"x kinship"=0.02935,
+                   "residual"=0.63266,model="MLM-X")
+simp <- data.frame("block group"=0.00363,"household"=0.04945,
+                   "autosomal kinship"=0.28473,"x kinship"=0.00,
+                   "residual"=0.66218,model="Simple MLM")
+
+mlmX <- gather(mlmX,varComp,varEst,-model)
+simp <- gather(simp,varComp,varEst,-model)
+toPl <- rbind(mlmX,simp)
+
+pdf("/projects/geneva/geneva_sata/caitlin/olga_xchr_assoc/prop_var_barchart_RBC.pdf")
+ggplot(toPl,aes(x=model,y=varEst,fill=varComp)) + geom_bar(position = "fill",stat = "identity") + theme_bw()+
+  ylab("Proportion Variance") + scale_fill_brewer()
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 74. Compare chr 19 results to X chr KC FF pairs
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+library(ggplot2)
+
+setwd("/projects/geneva/geneva_sata/caitlin/mlm_x/")
+
+kc19 <- get(load("olga_application/pcRelate_chr19_4125snps_autoPC15adj_unrel3Deg.RData"))
+names(kc19)
+kin19 <- kc19$kinship
+
+# stratify by ff, fm, mm pairs
+kinRes <- getobj("olga_application/pcRelate_Xchr_xPC12adj_unrel3Deg.RData")
+kinX <- kinRes$kinship
+
+## subset to KC > 0.1
+kin19 <- kin19[kin19$kin>0.1,]
+kinX <- kinX[kinX$kin>0.1,]
+dim(kin19) # 3047 7
+dim(kinX) # 21388 7
+
+kin19$id12 <- paste(kin19$ID1,kin19$ID2)
+kinX$id12 <- paste(kinX$ID1,kinX$ID2)
+kinBoth <- merge(kin19,kinX,all.x=TRUE,by="id12")
+kinBoth <- kinBoth[!is.na(kinBoth$kin.y),]
+dim(kinBoth) # 2230 15
+
+# merge in sex info
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+
+kin19 <- merge(kin19,pData(scan)[,c("scanID","sex")],by.x="ID1",by.y="scanID",all.x=TRUE)
+kin19 <- merge(kin19,pData(scan)[,c("scanID","sex")],by.x="ID2",by.y="scanID",all.x=TRUE,suffixes=c(".1",".2"))
+
+kin19 <- kin19[kin19$sex.1=="F"&kin19$sex.2=="F",]
+dim(kin19) # 1309 10
+
+kinBoth <- merge(kin19,kinX,by="id12",all.x=TRUE,suffixes=c(".19",".x"))
+kinBoth <- kinBoth[!is.na(kinBoth$kin.x),]
+dim(kinBoth) # 1090 17
+
+cor(kinBoth$kin.x,kinBoth$kin.19) # 0.38703
+
+
+
+ggplot(kinBoth,aes(x=kin.x,y=kin.19)) + geom_point(color=relationship) + geom_abline() +
+  theme_bw()
+dev.off()
+
+
+head(pData(scan)) 
+unrel.set <- scan$scanID[scan$unrelated.pcair&is.na(scan$gengrp6.outliers)&
+                           scan$geno.cntl==0&scan$subj.plink]
+
+kc.unrelAuto <- kin[is.element(kin$ID1,unrel.set)&is.element(kin$ID2,unrel.set),]
+dim(kc.unrelAuto)
+head(kc.unrelAuto)
+summary(kc.unrelAuto$kin)
+#      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#-0.098210 -0.006858  0.001194  0.001345  0.009370  0.311000 
+
+pdf("kc_chr19_autounrel_hist.pdf")
+ggplot(kc.unrelAuto,aes(x=kin)) + geom_histogram(binwidth=0.003) + xlab("KC") + 
+  ggtitle("KC calculated from 4,125 Chr 19 SNPs\nAuto Unrel Pairs") + theme_bw() 
+dev.off()
+
+
+kinMat.unrelAuto <- kinMat[rownames(kinMat)%in%unrel.set,colnames(kinMat)%in%unrel.set]
+dim(kinMat.unrelAuto) # 10614 10614
+
+summary(as.vector(kinMat.unrelAuto[lower.tri(kinMat.unrelAuto,diag=FALSE)]))
+
+pdf("xkc_unrel_hist.pdf")
+hist(as.vector(kinMat.unrelAuto[lower.tri(kinMat.unrelAuto,diag=FALSE)]),breaks=100,
+     main="X KC for 10,614 Unrel Pairs", xlab="X KC")
+dev.off()
+
+pdf("xkc_unrel_hist_trunc.pdf")
+hist(as.vector(kinMat.unrelAuto[lower.tri(kinMat.unrelAuto,diag=FALSE)]),ylim=c(0,1000),breaks=100,
+     main="X KC for 10,614 Unrel Pairs", xlab="X KC")
+dev.off()
+
+# stratify by ff, fm, mm pairs
+kinRes <- getobj("olga_application/pcRelate_Xchr_xPC12adj_unrel3Deg.RData")
+kc <- kinRes$kinship
+kc.unrelAuto <- kc[kc$ID1 %in% unrel.set & kc$ID2 %in% unrel.set,]
+
+kc.unrelAuto <- merge(kc.unrelAuto,pData(scan)[,c("scanID","sex")],by.x="ID1",by.y="scanID",all.x=TRUE)
+kc.unrelAuto <- merge(kc.unrelAuto,pData(scan)[,c("scanID","sex")],by.x="ID2",by.y="scanID",all.x=TRUE,suffixes=c(".1",".2"))
+kc.unrelAuto$sexPair <- paste(kc.unrelAuto$sex.1,kc.unrelAuto$sex.2,sep="-")
+kc.unrelAuto$sexPair[kc.unrelAuto$sexPair=="M-F"] <- "F-M"

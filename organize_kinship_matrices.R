@@ -12,6 +12,7 @@
 # 8. Create auto kinship with 1000 pedigrees, 8 person pedigree
 # 9. Create x kinship with 1000 pedigrees, 8 person pedigree w/ X kc <= auto KC
 # 10. Create auto kinship with 1000 pedigrees, 8 person pedigree w/ X kc <= auto KC
+# 11. Create unrelated kinship w 8000 samples
 
 
 
@@ -386,4 +387,18 @@ rm(list=ls())
 
 
 #####
+# 11. Create unrelated kinship w 8000 samples
 
+SEX <- c("F","F","F","F","M","M","M","M")
+
+xDiag <- rep(SEX,1000)
+xDiag[xDiag=="F"]	<- 0.5
+xDiag[xDiag=="M"] <- 1
+xDiag <- as.numeric(xDiag)
+kinX <- diag(xDiag)
+kinAuto <- 0.5*diag(1000)
+
+save(kinX,file="1000Peds_8000unrel_xKinship.RData")
+save(kinAuto,file="1000Peds_8000unrel_autoKinship.RData")
+
+rm(list=ls())

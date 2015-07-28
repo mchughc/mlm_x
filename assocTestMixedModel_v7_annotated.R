@@ -67,29 +67,14 @@ k <- ncol(W)
         XtX[which(maf==0)] <- NA
         beta <- as.vector(crossprod(Xtilde,Ytilde)/XtX)
         Vbeta <- (sY2/XtX - beta^2)/(n - k - 1) # RSS/XtX
-        Stat <- beta^2/Vbeta
- 
+        Stat <- beta^2/Vbeta 
     
     # collect results
-    if(method == "MASTOR"){
-      res[bidx,"Stat"] <- Stat
-      # compute p-values
-      res[bidx,"pval"] <- pchisq(Stat, df=1, lower.tail=FALSE)
-      
-    }else if(method == "EMMAX"){
-      if(is.null(ivar.vec)){
-        res[bidx,"Est"] <- beta
+      res[bidx,"Est"] <- beta
         res[bidx,"SE"] <- sqrt(Vbeta)
         res[bidx,"Stat"] <- Stat
         res[bidx,"pval"] <- pchisq(Stat, df=1, lower.tail=FALSE)        
-      }else{
-        res[bidx,"GxE.Stat"] <- GxE.Stat
-        res[bidx,"GxE.pval"] <- pchisq(GxE.Stat, df=(v-1), lower.tail=FALSE)
-        res[bidx,"Joint.Stat"] <- Joint.Stat
-        res[bidx,"Joint.pval"] <- pchisq(Joint.Stat, df=v, lower.tail=FALSE)        
-      }
-    }
-    
+        
     endTime <- Sys.time()
     rate <- format(endTime - startTime, digits=4)
     
