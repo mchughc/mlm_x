@@ -88,7 +88,7 @@
 # 72. Run regression to check corr of X chr SNPs with auto PCs
 # 73. Make barplots of var comp estimates w and w/o X chr KC for RBC
 # 74. Compare chr 19 results to X chr KC FF pairs
-
+# 75. Rerun CAnD with new p-value combining method
 
 
 
@@ -6275,8 +6275,10 @@ pdf("pvalues_CAnD_etal_CAm_autos.pdf",width=11,height=9)
 ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
-                                                          guide = guide_legend(title = "")) +
-  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
   ggtitle("Self-Identified Central Americans, n=1094")
 dev.off()
 
@@ -6286,7 +6288,9 @@ ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(col
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
                                           guide = guide_legend(title = "")) +
-  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
   ggtitle("Self-Identified South Americans, n=686")
 dev.off()
 
@@ -6298,6 +6302,7 @@ ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(col
                                           guide = guide_legend(title = "")) +
   theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
         strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
   ggtitle("Self-Identified Puerto Ricans, n=1703")
 dev.off()
 
@@ -6307,7 +6312,9 @@ ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(col
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
                                           guide = guide_legend(title = "")) +
-  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
   ggtitle("Self-Identified Mexicans, n=3635")
 dev.off()
 
@@ -6317,7 +6324,9 @@ ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(col
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
                                           guide = guide_legend(title = "")) +
-  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
   ggtitle("Self-Identified Dominicans, n=897")
 dev.off()
 
@@ -6327,7 +6336,9 @@ ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(col
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
                                           guide = guide_legend(title = "")) +
-  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
   ggtitle("Self-Identified Cubans, n=1732")
 dev.off()
 
@@ -6337,7 +6348,9 @@ ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(col
   facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
   xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
                                           guide = guide_legend(title = "")) +
-  theme(legend.position = "none") +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
   ggtitle("Self-Identified Other/Unknown, n=326")
 dev.off()
 
@@ -8013,3 +8026,128 @@ kc.unrelAuto <- merge(kc.unrelAuto,pData(scan)[,c("scanID","sex")],by.x="ID1",by
 kc.unrelAuto <- merge(kc.unrelAuto,pData(scan)[,c("scanID","sex")],by.x="ID2",by.y="scanID",all.x=TRUE,suffixes=c(".1",".2"))
 kc.unrelAuto$sexPair <- paste(kc.unrelAuto$sex.1,kc.unrelAuto$sex.2,sep="-")
 kc.unrelAuto$sexPair[kc.unrelAuto$sexPair=="M-F"] <- "F-M"
+
+rm(list=ls())
+
+
+#####
+# 75. Rerun CAnD with new p-value combining method
+
+calc_combP <- function(dat){
+  sig2.i <- apply(dat,1,var) # this is individual level variance
+  
+  # get the w_cc',i for each individual i
+  m <- ncol(dat)
+  n <- nrow(dat)
+  tmp1 <- expand.grid(1:m,1:m) # all pairwise combos of chrs
+  # remove rows where chrs are =
+  cc <- tmp1[,1]==tmp1[,2]
+  tmp1 <- tmp1[!cc,]
+  w <- rep(NA,nrow(dat))
+  for(i in 1:nrow(dat)){
+    abar <- mean(as.numeric(dat[i,]))
+    tmp2 <- cbind(as.numeric(dat[i,tmp1[,1]])-abar,as.numeric(dat[i,tmp1[,2]])-abar)
+    w[i] <- mean(tmp2[,1]*tmp2[,2])
+  }
+  # w_{cc',i} should be zero under the null, since we are adj for the mean ancestry w/in an individ
+  # this is relative to an individ, so there will be no correlation
+  # if this is relative to the population itself, there will be correlation
+  
+  # need a sig2_c for each pair of chromosomes
+  sig2.c <- rep(NA,ncol(dat))
+  tstat <- rep(NA,ncol(dat))
+  for(i in 1:m){
+    tmp <- dat[,-i]
+    pool <- apply(tmp,1,mean)
+    d <- dat[,i]-pool
+    dbar <- mean(d)
+    #  sdd <- sd(d)/sqrt(n)
+
+    sig2.c[i] <- sum((d-dbar)^2)/(n*(n-1))
+    tstat[i] <- dbar/sqrt(sig2.c[i])
+    #  tstat[i] <- t.test(nam[,i],pool,paired=TRUE)$statistic
+  }
+  
+  sig.matrix <- diag(nrow=m,ncol=m)
+  for(i in 1:m){
+    for(j in 1:m){
+      denom <- n^2*sqrt(sig2.c[i])*sqrt(sig2.c[j])
+      sig.matrix[i,j] <- (1/denom)*sum((m/(m-1)^2)*(w-sig2.i))
+    }
+  }
+  diag(sig.matrix) <- 1
+  mean(sig.matrix[lower.tri(sig.matrix)]) # -0.054286
+  
+  # calculate new stat
+  (newstat <- tstat%*%solve(sig.matrix)%*%tstat) # 49.37731
+  return(pchisq(newstat,df=m,lower.tail=FALSE))
+}
+
+library(GWASTools)
+
+res <- getobj("local_ancestry_byChr.RData")
+scan <- getobj("admix_xchr_aftermerge.RData")
+colnames(scan)[3:5] <- c("AFR.x","NAM.x","EUR.x")               
+# merge in admixture results for x chr since don't have local ancestry estimates
+res <- merge(res,scan,by="scanID")
+
+res$bkgrd[is.element(res$bkgrd,c("Other","Unknown"))] <- "Other/Unknown"
+
+## need to subset so that only unrel samples are included
+unrel <- getobj("unrelated_pcair_deg4.RData")
+
+sum(is.element(res$scanID,unrel))
+sum(!is.element(res$scanID,unrel))
+
+res <- res[is.element(res$scanID,unrel),]
+
+# get avg local ancestry across the autosomes
+colnames(res)
+afrCols <- 24:45
+colnames(res)[afrCols]
+res$AFR.auto <- rowMeans(res[,afrCols])
+
+eurCols <- 2:23
+colnames(res)[eurCols]
+res$EUR.auto <- rowMeans(res[,eurCols])
+
+namCols <- 46:67
+colnames(res)[namCols]
+res$NAM.auto <- rowMeans(res[,namCols])
+
+
+## get CAnD pvalues across the autosomes for PR samples, combine using new method
+
+subgrpRes <- data.frame("bkgrd"=unique(res$bkgrd),"n"=NA)
+newCols <- data.frame(matrix(NA,nrow=nrow(subgrpRes),ncol=23*3))
+colnames(newCols) <- paste0(paste0("chr",c(23,1:22)),rep(c(".NAM",".EUR",".AFR"),each=23))
+subgrpRes <- cbind(subgrpRes,newCols)
+colnames(subgrpRes)
+
+namCols <- c(70,46:67)
+eurCols <- c(71,2:23)
+afrCols <- c(69,24:45)
+
+namAt <- c(70,74)
+eurAt <- c(71,73)
+afrAt <- c(69,72)
+
+colnames(res)[namCols]; colnames(res)[eurCols]; colnames(res)[afrCols]
+nonPres <- subgrpRes
+pooledres <- subgrpRes
+
+i <- which(subgrpRes$bkgrd=="PuertoRican")
+pop <- subgrpRes$bkgrd[i]
+subgrpRes$n[i] <- sum(is.element(res$bkgrd,pop))
+
+# genome-wide pvalue
+calc_combP(res[res$bkgrd==pop,namCols]) # 4.11335e-173
+calc_combP(res[res$bkgrd==pop,eurCols]) # 5.288241e-185
+calc_combP(res[res$bkgrd==pop,afrCols]) # 1.797041e-26
+
+# autosomal-wide pvalue 
+calc_combP(res[res$bkgrd==pop,namCols[2:23]]) # 1.253574e-49
+calc_combP(res[res$bkgrd==pop,eurCols[2:23]]) # 2.4385e-36
+calc_combP(res[res$bkgrd==pop,afrCols[2:23]]) # 7.859006e-15
+
+rm(list=ls())
