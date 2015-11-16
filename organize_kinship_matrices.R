@@ -396,7 +396,7 @@ xDiag[xDiag=="F"]	<- 0.5
 xDiag[xDiag=="M"] <- 1
 xDiag <- as.numeric(xDiag)
 kinX <- diag(xDiag)
-kinAuto <- 0.5*diag(1000)
+kinAuto <- 0.5*diag(8000)
 
 save(kinX,file="1000Peds_8000unrel_xKinship.RData")
 save(kinAuto,file="1000Peds_8000unrel_autoKinship.RData")

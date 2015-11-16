@@ -88,6 +88,13 @@ source("assocTestMixedModel_v7.R")
 # 75. Parse extreme sig type I error results for paper
 # 76. Make tyI error plots for JSM poster (x + auto SNPs)
 # 77. Make power plots for JSM poster (x + auto SNPs)
+# 78. Make tyI error CIs for paper
+
+##### ALL FILES MOVED FROM /projects/geneva/geneva_sata/caitlin/ TO /projects/users/caitlin
+
+# 79. Make pdf for paper that includes all var comp boxplots (v2)
+# 80. Make pdf for paper with all power results 
+
 
 
 #####
@@ -8830,8 +8837,572 @@ ggplot(toPlBoth,aes(x=fp,y=tp,color=model)) +
         legend.text=element_text(size=16),strip.text = element_text(size=16))
 dev.off()
 
+rm(list=ls())
 
 
+#####
+# 78. Make tyI error CIs for paper
+
+library(ggplot2)
+library(dplyr); library(tidyr)
+library(readr)
+
+dat <- get(load("../nullSims_8ped_fem/1M_tyIerr_autoSNP.RData"))
+dat <- tbl_df(dat)
+dat <- group_by(dat,model,sigma_a,sigma_x)
+
+# 2x2 of sigma_a, sigma_x values
+# 4 entries along the x axis for the 4 models considered
+# change the x axis values
+
+dat$stdErr <- sqrt(dat$alpha*(1-dat$alpha)/dat$iters)
+dat$lower <- dat$tyIerrRate-1.96*dat$stdErr
+dat$upper <- dat$tyIerrRate+1.96*dat$stdErr
+
+dat$ciIncl <- dat$lower<dat$alpha&dat$upper>dat$alpha
+
+
+dat <- get(load("../nullSims_8ped_fem/1M_tyIerr.RData"))
+dat <- tbl_df(dat)
+dat <- group_by(dat,model,sigma_a,sigma_x)
+
+# 2x2 of sigma_a, sigma_x values
+# 4 entries along the x axis for the 4 models considered
+# change the x axis values
+
+dat$stdErr <- sqrt(dat$alpha*(1-dat$alpha)/dat$iters)
+dat$lower <- dat$tyIerrRate-1.96*dat$stdErr
+dat$upper <- dat$tyIerrRate+1.96*dat$stdErr
+
+dat$ciIncl <- dat$lower<dat$alpha&dat$upper>dat$alpha
 
 rm(list=ls())
 
+
+#####
+# 79. Make pdf for paper that includes all var comp boxplots (v2)
+
+library(GWASTools)
+library(ggplot2)
+
+setwd("/projects/users/caitlin/mlm_x/")
+dat <- read.table("nullSims_8ped_fem/allRes_cisOnly.txt",header=FALSE,skip=1,as.is=TRUE,fill=TRUE)
+head(dat)
+colnames(dat)  <- c("Est","Lower95","Upper95","model","comp","sigma_auto","sigma_x")
+
+table(dat$model,dat$comp)
+dat <- dat[!is.element(dat$model,"Upper"),]
+dat <- dat[!is.element(dat$model,""),]
+
+table(dat$comp,dat$sigma_auto,dat$sigma_x)
+
+cis <- getobj("nullSims_8ped/varCompCIs_nullSims.RData")
+
+
+mf_labeller <- function(var, value){
+  value <- as.character(value)
+  if (var=="sigma_x") {
+    value[value=="sigma_x=0.3"] <- "sigma[X]^{2}==0.3"
+    value[value=="sigma_x=0.5"]  <- "sigma[X]^{2}==0.5"
+    value <- lapply(value, function(x) parse(text=x))
+  }
+  if (var=="sigma_a"){
+    value[value=="sigma_a=0.3"] <- "sigma[A]^{2}==0.3"
+    value[value=="sigma_a=0.5"] <- "sigma[A]^{2}==0.5"
+    value <- lapply(value,function(x) parse(text=x))
+  }
+  return(value)
+}
+
+## male-centric, MLM-X results
+cib <- cis[["cis_both"]]
+head(cib)
+# exclude the extreme values
+
+cib <- cib[!is.element(cib$sigma_a,3)&!is.element(cib$sigma_x,3),]
+cib$sigma_a <- paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x <- paste0("sigma_x=",cib$sigma_x)
+cib$comp[cib$comp=="x"] <- "X"
+cib$comp[cib$comp=="resid"] <- "Residual"
+cib$comp[cib$comp=="auto"] <- "Autosomal"
+cib$comp=ordered(cib$comp,levels=c("Autosomal","X","Residual"))
+
+ftable(cib$comp,cib$sigma_a,cib$sigma_x)
+#                    sigma_x=0.3 sigma_x=0.5
+# auto  sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# x     sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# resid sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+
+# so 10K iterations of each composition
+# add in mean for each component
+mns <- expand.grid(comp=c("Autosomal","X","Residual"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp=ordered(mns$comp,levels=c("Autosomal","X","Residual"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+p1 <- ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x, labeller=mf_labeller) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  #ggtitle("Variance Component Estimates of 10K Iterations") +
+  ggtitle('A') + theme(plot.title=element_text(hjust=0)) +
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4)
+
+#mtext("A", side=3, line=0.75,adj=0,cex=1.3)
+
+## male-centric, simple MLM results (ie. auto)
+cib <- cis[["cis_auto"]]
+head(cib)
+# exclude the extreme values
+
+cib <- cib[!is.element(cib$sigma_a,3)&!is.element(cib$sigma_x,3),]
+cib$sigma_a <- paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x <- paste0("sigma_x=",cib$sigma_x)
+cib$comp[cib$comp=="resid"] <- "Residual"
+cib$comp[cib$comp=="auto"] <- "Autosomal"
+cib$comp=ordered(cib$comp,levels=c("Autosomal","Residual"))
+
+ftable(cib$comp,cib$sigma_a,cib$sigma_x)
+#                    sigma_x=0.3 sigma_x=0.5
+# auto  sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# resid sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# so 10K iterations of each composition
+# add in mean for each component
+
+mns <- expand.grid(comp=c("Autosomal","Residual"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp=ordered(mns$comp,levels=c("Autosomal","Residual"))
+mns$y <- 0.33
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+p2 <- ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x, labeller=mf_labeller) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  #ggtitle("Variance Component Estimates of 10K Iterations") +
+  ggtitle('C') + theme(plot.title=element_text(hjust=0)) +
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4)
+
+#mtext("B", side=3, line=0.75,adj=0,cex=1.3)
+
+## male-centric, g_x only results (ie. x)
+cib <- cis[["cis_x"]]
+head(cib)
+# exclude the extreme values
+
+cib <- cib[!is.element(cib$sigma_a,3)&!is.element(cib$sigma_x,3),]
+cib$sigma_a <- paste0("sigma_a=",cib$sigma_a)
+cib$sigma_x <- paste0("sigma_x=",cib$sigma_x)
+cib$comp[cib$comp=="x"] <- "X"
+cib$comp[cib$comp=="resid"] <- "Residual"
+cib$comp=ordered(cib$comp,levels=c("X","Residual"))
+
+ftable(cib$comp,cib$sigma_a,cib$sigma_x)
+#                    sigma_x=0.3 sigma_x=0.5
+# x     sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# resid sigma_a=0.3        10010       10010
+#       sigma_a=0.5        10010       10010
+# so 10K iterations of each composition
+# add in mean for each component
+
+mns <- expand.grid(comp=c("X","Residual"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp=ordered(mns$comp,levels=c("X","Residual"))
+mns$y <- 0.2
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+
+mns$value <- format(mns$value,digits=3)
+
+p3 <- ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x, labeller=mf_labeller) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  #ggtitle("Variance Component Estimates of 10K Iterations") +
+  ggtitle('E') + theme(plot.title=element_text(hjust=0)) +
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4)
+
+#mtext("C", side=3, line=0.75,adj=0,cex=1.3)
+
+## balanced (fem), mlm-x results (ie both)
+cib <- dat[dat$model=="both",]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 9984 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_auto)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp[cib$comp=="x"] <- "X"
+cib$comp[cib$comp=="resid"] <- "Residual"
+cib$comp[cib$comp=="auto"] <- "Autosomal"
+cib$comp=ordered(cib$comp,levels=c("Autosomal","X","Residual"))
+
+cib$Est <- as.numeric(cib$Est)
+
+mns <- expand.grid(comp=c("Autosomal","X","Residual"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp=ordered(mns$comp,levels=c("Autosomal","X","Residual"))
+mns$y <- -0.1
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns$value <- format(mns$value,digits=3)
+
+p4 <- ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x, labeller=mf_labeller) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  #ggtitle("Variance Component Estimates of 10K Iterations") +
+  ggtitle('B') + theme(plot.title=element_text(hjust=0)) +
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4)
+
+#mtext("D", side=3, line=0.75,adj=0,cex=1.3)
+
+## balanced (fem), simple MLM results (ie. auto)
+
+cib <- dat[dat$model=="auto",]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 9984 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_auto)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp[cib$comp=="auto"] <- "Autosomal"
+cib$comp[cib$comp=="resid"] <- "Residual"
+cib$comp=ordered(cib$comp,levels=c("Autosomal","Residual"))
+
+cib$Est <- as.numeric(cib$Est)
+
+mns <- expand.grid(comp=c("Autosomal","Residual"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp=ordered(mns$comp,levels=c("Autosomal","Residual"))
+mns$y <- 0.33
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns$value <- format(mns$value,digits=3)
+
+p5 <- ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x, labeller=mf_labeller) + theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  #ggtitle("Variance Component Estimates of 10K Iterations") +
+  ggtitle('D') + theme(plot.title=element_text(hjust=0)) +
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4)
+
+#mtext("E", side=3, line=0.75,adj=0,cex=1.3)
+
+## balanced (fem), g_x only results (ie. x)
+
+cib <- dat[dat$model=="x",]
+ftable(cib$comp,cib$sigma_a,cib$sigma_x) # 9984 of each configuration
+
+cib$sigma_a=paste0("sigma_a=",cib$sigma_auto)
+cib$sigma_x=paste0("sigma_x=",cib$sigma_x)
+cib$comp[cib$comp=="x"] <- "X"
+cib$comp[cib$comp=="resid"] <- "Residual"
+cib$comp=ordered(cib$comp,levels=c("X","Residual"))
+
+cib$Est <- as.numeric(cib$Est)
+
+mns <- expand.grid(comp=c("X","Residual"),sigma_a=c("sigma_a=0.3","sigma_a=0.5"),
+                   sigma_x=c("sigma_x=0.3","sigma_x=0.5"))
+mns$comp=ordered(mns$comp,levels=c("X","Residual"))
+mns$y <- 0.2
+mns$value <- NA
+for(i in seq_len(nrow(mns))){
+  mns$value[i] <- mean(cib$Est[cib$comp==mns$comp[i]&cib$sigma_a==mns$sigma_a[i]&cib$sigma_x==mns$sigma_x[i]])
+}
+mns$value <- format(mns$value,digits=3)
+
+p6 <- ggplot(cib,aes(x=comp,y=Est)) + geom_boxplot() + facet_grid(sigma_a~sigma_x, labeller=mf_labeller) +
+  theme_bw() +
+  xlab("Variance Component") + ylab("Estimate") +
+  #ggtitle("Variance Component Estimates of 10K Iterations") +
+  ggtitle('F') + theme(plot.title=element_text(hjust=0)) +
+  geom_text(data=mns, aes(x=comp, y=y, label=value), size=4)
+
+#mtext("F", side=3, line=0.75,adj=0,cex=1.3)
+
+library(gridExtra); library(RGraphics)
+
+pdf("boxplots_varComps_allModels_allPeds_10Kiters_v2.pdf",width=10.5,height=14)
+#par( mai=c(0.5, 0.65, 0.4, 0.05), mgp=c(2, 0.5, 0), tck=-0.03 ,mfrow=c(2,3))
+grid.arrange(p1,p4,p2,p5,p3,p6,ncol=2)
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 80. Make pdf for paper with all power results 
+
+setwd("/projects/users/caitlin/mlm_x/")
+source("powerGraph.R")
+library(ggplot2); library(reshape)
+library(readr); library(tidyr)
+library(dplyr)
+
+dat <- read.table("powerSims_8ped/autoSNP/allmmRes.txt",header=TRUE,as.is=TRUE)
+dim(dat) # 84999 13
+
+dat <- dat[!is.element(dat$snpID,"snpID"),]
+dim(dat) # 80000 13
+
+dat <- tbl_df(dat)
+dat$causal[dat$causal==0.05] <- TRUE
+dat$causal[dat$causal==0] <- FALSE
+toPl <- dat %>%
+  filter(sigma_x==3&sigma_a==0.3) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+
+sa3sx3=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sa3sx3$sigma_a=paste0("sigma_a=",0.3)
+sa3sx3$sigma_x=paste0("sigma_x=",3)
+
+toPl <- dat %>%
+  filter(sigma_x==0.3&sigma_a==3) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx5sa3=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx5sa3$sigma_a=paste0("sigma_a=",3)
+sx5sa3$sigma_x=paste0("sigma_x=",0.3)
+
+# read in non-extreme results
+dat <- read.table("powerSims_8ped/autoSNP/allSims.txt",header=TRUE,as.is=TRUE)
+dim(dat) # 80000 13
+
+dat <- dat[!is.element(dat$snpID,"snpID"),]
+
+dat <- tbl_df(dat)
+dat$causal[dat$causal==0.05] <- TRUE
+dat$causal[dat$causal==0] <- FALSE
+
+toPl <- dat %>%
+  filter(sigma_x==0.3&sigma_a==0.3) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx03sa03=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx03sa03$sigma_a=paste0("sigma_a=",0.3)
+sx03sa03$sigma_x=paste0("sigma_x=",0.3)
+
+toPl <- dat %>%
+  filter(sigma_x==0.5&sigma_a==0.3) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx05sa03=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx05sa03$sigma_a=paste0("sigma_a=",0.3)
+sx05sa03$sigma_x=paste0("sigma_x=",0.5)
+
+toPl <- dat %>%
+  filter(sigma_x==0.5&sigma_a==0.5) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx05sa05=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx05sa05$sigma_a=paste0("sigma_a=",0.5)
+sx05sa05$sigma_x=paste0("sigma_x=",0.5)
+
+toPl <- dat %>%
+  filter(sigma_x==0.3&sigma_a==0.5) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx03sa05=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx03sa05$sigma_a=paste0("sigma_a=",0.5)
+sx03sa05$sigma_x=paste0("sigma_x=",0.3)
+
+tot <- rbind(sa3sx3,sx5sa3,sx03sa03,sx05sa03,sx05sa05,sx03sa05)
+tot$x_fp_rate <- tot$x_fp/tot$xiter
+tot$x_tp_rate <- tot$x_tp/tot$xiter
+tot$auto_fp_rate <- tot$auto_fp/tot$autoiter
+tot$auto_tp_rate <- tot$auto_tp/tot$autoiter
+tot$both_fp_rate <- tot$both_fp/tot$bothiter
+tot$both_tp_rate <- tot$both_tp/tot$bothiter
+
+both <- tot[,c("sigma_a","sigma_x","both_fp_rate","both_tp_rate")]
+both$model <- "MLM-X"
+both$fp <- both$both_fp_rate
+both$tp <- both$both_tp_rate
+
+auto <- tot[,c("sigma_a","sigma_x","auto_fp_rate","auto_tp_rate")]
+auto$model <- "Simple MLM"
+auto$fp <- auto$auto_fp_rate
+auto$tp <- auto$auto_tp_rate
+
+x <- tot[,c("sigma_a","sigma_x","x_fp_rate","x_tp_rate")]
+x$model <- "X only"
+x$fp <- x$x_fp_rate
+x$tp <- x$x_tp_rate
+
+toPl <- rbind(x[,c("sigma_x","sigma_a","model","tp","fp")],
+              auto[,c("sigma_x","sigma_a","model","tp","fp")],
+              both[,c("sigma_x","sigma_a","model","tp","fp")])
+
+toPlauto <- toPl
+
+##
+# add in results testing X chr SNP
+dat <- read.table("powerSims_8ped/all_mmRes.txt",header=T,as.is=T)
+dim(dat) # 40000 13
+
+dat <- dat[!is.element(dat$snpID,"snpID"),]
+
+dat$causal[dat$causal=="causal"] <- NA
+dat$causal[dat$causal==0.05] <- TRUE
+dat$causal[dat$causal==0] <- FALSE
+toPl <- dat %>%
+  filter(sigma_x=="3"&sigma_a=="0.3") %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+
+sa3sx3=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sa3sx3$sigma_a=paste0("sigma_a=",0.3)
+sa3sx3$sigma_x=paste0("sigma_x=",3)
+
+toPl <- dat %>%
+  filter(sigma_x==0.3&sigma_a==3) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx5sa3=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx5sa3$sigma_a=paste0("sigma_a=",3)
+sx5sa3$sigma_x=paste0("sigma_x=",0.3)
+
+
+## non extreme results are in the same file
+
+toPl <- dat %>%
+  filter(sigma_x==0.3&sigma_a==0.3) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx03sa03=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx03sa03$sigma_a=paste0("sigma_a=",0.3)
+sx03sa03$sigma_x=paste0("sigma_x=",0.3)
+
+toPl <- dat %>%
+  filter(sigma_x==0.5&sigma_a==0.3) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx05sa03=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx05sa03$sigma_a=paste0("sigma_a=",0.3)
+sx05sa03$sigma_x=paste0("sigma_x=",0.5)
+
+toPl <- dat %>%
+  filter(sigma_x==0.5&sigma_a==0.5) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx05sa05=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx05sa05$sigma_a=paste0("sigma_a=",0.5)
+sx05sa05$sigma_x=paste0("sigma_x=",0.5)
+
+toPl <- dat %>%
+  filter(sigma_x==0.3&sigma_a==0.5) %>%
+  mutate(beta1=0.05) %>%
+  mutate(causal=as.logical(causal))
+sx03sa05=powerGraph(toPl,b=0.05,fn=NULL,xlims=c(0,0.05),values=TRUE)
+sx03sa05$sigma_a=paste0("sigma_a=",0.5)
+sx03sa05$sigma_x=paste0("sigma_x=",0.3)
+
+tot <- rbind(sa3sx3,sx5sa3,sx03sa03,sx05sa03,sx05sa05,sx03sa05)
+tot$x_fp_rate <- tot$x_fp/tot$xiter
+tot$x_tp_rate <- tot$x_tp/tot$xiter
+tot$auto_fp_rate <- tot$auto_fp/tot$autoiter
+tot$auto_tp_rate <- tot$auto_tp/tot$autoiter
+tot$both_fp_rate <- tot$both_fp/tot$bothiter
+tot$both_tp_rate <- tot$both_tp/tot$bothiter
+
+both <- tot[,c("sigma_a","sigma_x","both_fp_rate","both_tp_rate")]
+both$model <- "MLM-X"
+both$fp <- both$both_fp_rate
+both$tp <- both$both_tp_rate
+
+auto <- tot[,c("sigma_a","sigma_x","auto_fp_rate","auto_tp_rate")]
+auto$model <- "Simple MLM"
+auto$fp <- auto$auto_fp_rate
+auto$tp <- auto$auto_tp_rate
+
+x <- tot[,c("sigma_a","sigma_x","x_fp_rate","x_tp_rate")]
+x$model <- "X only"
+x$fp <- x$x_fp_rate
+x$tp <- x$x_tp_rate
+
+toPl <- rbind(both[,-c(3,4)],auto[,-c(3,4)],x[,-c(3,4)])
+
+toPlauto$chr <- "Autosomal SNP"
+toPl$chr <- "X Chromosome SNP"
+toPlBoth <- rbind(toPl,toPlauto)
+
+
+mf_labeller <- function(var, value){
+  value <- as.character(value)
+  if (var=="sigma_x") {
+    value[value=="sigma_x=0.3"] <- "sigma[X]^{2}==0.3"
+    value[value=="sigma_x=0.5"]  <- "sigma[X]^{2}==0.5"
+    value[value=="sigma_x=3"]  <- "sigma[X]^{2}==3"
+    value <- lapply(value, function(x) parse(text=x))
+  }
+  if (var=="sigma_a"){
+    value[value=="sigma_a=0.3"] <- "sigma[A]^{2}==0.3"
+    value[value=="sigma_a=0.5"] <- "sigma[A]^{2}==0.5"
+    value[value=="sigma_a=3"] <- "sigma[A]^{2}==3"
+    value <- lapply(value,function(x) parse(text=x))
+  }
+  return(value)
+}
+
+toPlc <- toPlBoth[toPlBoth$sigma_a=="sigma_a=3"|toPlBoth$sigma_x=="sigma_x=3",]
+pc <- ggplot(toPlc,aes(x=fp,y=tp,color=model)) + 
+  geom_line(size=1.5,aes(linetype=model)) +
+  facet_grid(chr~sigma_a + sigma_x, labeller=mf_labeller) + theme_bw() + 
+  ylab("True Positive Rate") + xlab("False Positive Rate") +
+  ggtitle('C')+ xlim(0,0.05) + ylim(0,0.48) +
+  theme(plot.title=element_text(hjust=0),axis.text=element_text(size=16),axis.title=element_text(size=18),
+        title=element_text(size=20),legend.text=element_text(size=16),strip.text = element_text(size=16),
+        legend.position="none")
+
+toPla <- toPlBoth[toPlBoth$chr=="Autosomal SNP"&
+                    !is.element(toPlBoth$sigma_a,"sigma_a=3")&!is.element(toPlBoth$sigma_x,"sigma_x=3"),]
+pa <- ggplot(toPla,aes(x=fp,y=tp,color=model)) + 
+  geom_line(size=1.5,aes(linetype=model)) +
+  facet_grid(sigma_a ~ sigma_x, labeller=mf_labeller) + theme_bw() + 
+  ylab("True Positive Rate") + xlab("False Positive Rate") +
+  ggtitle('A')+ xlim(0,0.05) + ylim(0,0.48) +
+  theme(plot.title=element_text(hjust=0),axis.text=element_text(size=16),axis.title=element_text(size=18),
+        title=element_text(size=20),legend.text=element_text(size=16),strip.text = element_text(size=16),
+        legend.position="none")
+
+toPlb <- toPlBoth[toPlBoth$chr=="X Chromosome SNP"&
+                    !is.element(toPlBoth$sigma_a,"sigma_a=3")&!is.element(toPlBoth$sigma_x,"sigma_x=3"),]
+pb <- ggplot(toPlb,aes(x=fp,y=tp,color=model)) + 
+  geom_line(size=1.5,aes(linetype=model)) +
+  facet_grid(sigma_a ~ sigma_x, labeller=mf_labeller) + theme_bw() + 
+  ylab("True Positive Rate") + xlab("False Positive Rate") +
+  ggtitle('B')+ xlim(0,0.05) + ylim(0,0.75) +
+  theme(plot.title=element_text(hjust=0),axis.text=element_text(size=16),axis.title=element_text(size=18),
+        title=element_text(size=20),legend.text=element_text(size=16),strip.text = element_text(size=16),
+        legend.position="none")
+
+# make a 4th plot, only of the legend
+ptmp <- ggplot(toPlc,aes(x=fp,y=tp,color=model)) + 
+  geom_line(size=1.5,aes(linetype=model)) +
+  facet_grid(chr~sigma_a + sigma_x, labeller=mf_labeller) + theme_bw() + 
+  ylab("True Positive Rate") + xlab("False Positive Rate") +
+  ggtitle('C')+ xlim(0,0.05) + ylim(0,0.48) +
+  theme(plot.title=element_text(hjust=0),axis.text=element_text(size=16),axis.title=element_text(size=18),
+        title=element_text(size=20),legend.text=element_text(size=16),strip.text = element_text(size=16))
+g <- ggplot_gtable(ggplot_build(ptmp))$grobs
+dev.off()
+
+library(gridExtra); library(RGraphics)
+pdf("power_beta05_8ped_bothSNP_extremeAndNotSigma_10kiters_v2.pdf",width=18,height=16)
+#par( mai=c(0.5, 0.65, 0.4, 0.05), mgp=c(2, 0.5, 0), tck=-0.03 ,mfrow=c(2,3))
+grid.arrange(pa,pb,pc,g[[18]],ncol=2)
+dev.off()
+
+rm(list=ls())

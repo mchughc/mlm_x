@@ -90,6 +90,9 @@
 # 74. Compare chr 19 results to X chr KC FF pairs
 # 75. Rerun CAnD with new p-value combining method
 
+# 76. Rerun PC-AiR, PC-Relate iterations w same KC mat set of individuals
+# 77. Make X chr KC mat with different SNP set
+# 78. Make X chr KC mat with pruned SNPs, adj for PCs from #76.
 
 
 #####
@@ -8149,5 +8152,201 @@ calc_combP(res[res$bkgrd==pop,afrCols]) # 1.797041e-26
 calc_combP(res[res$bkgrd==pop,namCols[2:23]]) # 1.253574e-49
 calc_combP(res[res$bkgrd==pop,eurCols[2:23]]) # 2.4385e-36
 calc_combP(res[res$bkgrd==pop,afrCols[2:23]]) # 7.859006e-15
+
+rm(list=ls())
+
+
+#####
+# 76. Rerun PC-AiR, PC-Relate iterations w same KC mat set of individuals
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+
+setwd("/projects/users/caitlin/mlm_x")
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&!is.element(scan$gengrp6.outliers, "AsianOutliers")&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[!is.element(scan$gengrp6.outliers, "AsianOutliers")&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+### need to exclude 13 people with an entirely missing x chr 
+# from chromosome.anomalies.csv file, they are study samples with x chr anomaly
+# thus, their entire x chr is filtered out. 
+
+chromAnoms <- read.csv("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/dbGaP/v1_original_consent/To_dbGaP/chromosome_anomalies/chromosome_anomalies.csv",
+                       header=TRUE,as.is=T)
+ids <- chromAnoms$scanID[chromAnoms$chromosome=="X"&chromAnoms$filter&chromAnoms$whole.chr&
+                           !is.element(substr(chromAnoms$SUBJECT_ID,1,2),"NA")]
+length(ids) # 13
+chromAnoms[is.element(chromAnoms$scanID,ids),] # perfect! exactly what we want
+
+length(scanIncl) # 12784
+scanIncl <- scanIncl[!is.element(scanIncl,ids)]
+length(scanIncl) # 12771
+
+unrel.set <- unrel.set[!is.element(unrel.set,ids)]
+length(unrel.set) # 10614
+
+# perfect, so 12771 is sample set
+
+snp.pruned <- get(load("olga_application/snp_sel_xChr_ldPruned.RData"))
+head(snp.pruned); length(snp.pruned) # 3600
+
+# make genoData object
+gdsobj <- GdsGenotypeReader("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/netCDF/subjects/OLGA_subj_geno.gds")
+genoData <- GenotypeData(gdsobj,scanAnnot=scan[scan$subj.plink,])
+
+pc <- pcair(genoData,unrel.set=unrel.set,Xchr=TRUE,snp.include=snp.pruned,scan.include=scanIncl)
+save(pc,file="olga_application/pca_prunedXsnps_10614unrel12771rel_unrelDeg3_kcMatSet.RData")
+
+rm(list=ls())
+
+
+#####
+# 77. Make X chr KC mat with different SNP set
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+
+setwd("/projects/users/caitlin/mlm_x")
+
+## run pc-relate adj for the pc's from above
+xPC <- get(load("olga_application/pca_prunedXsnps_10614unrel12771rel_unrelDeg3_kcMatSet.RData"))
+
+pcMat <- xPC$vectors[,c(1:2)]
+dim(pcMat) # 12771 2
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&!is.element(scan$gengrp6.outliers, "AsianOutliers")&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[!is.element(scan$gengrp6.outliers, "AsianOutliers")&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+### need to exclude 13 people with an entirely missing x chr 
+# from chromosome.anomalies.csv file, they are study samples with x chr anomaly
+# thus, their entire x chr is filtered out. 
+
+chromAnoms <- read.csv("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/dbGaP/v1_original_consent/To_dbGaP/chromosome_anomalies/chromosome_anomalies.csv",
+                       header=TRUE,as.is=T)
+ids <- chromAnoms$scanID[chromAnoms$chromosome=="X"&chromAnoms$filter&chromAnoms$whole.chr&
+                           !is.element(substr(chromAnoms$SUBJECT_ID,1,2),"NA")]
+length(ids) # 13
+chromAnoms[is.element(chromAnoms$scanID,ids),] # perfect! exactly what we want
+
+length(scanIncl) # 12784
+scanIncl <- scanIncl[!is.element(scanIncl,ids)]
+length(scanIncl) # 12771
+
+unrel.set <- unrel.set[!is.element(unrel.set,ids)]
+length(unrel.set) # 10614
+
+# take these individs out of pcMat too
+pcMat <- pcMat[is.element(rownames(pcMat),scanIncl),]
+dim(pcMat) # 12771 2
+
+# make genoData object
+gdsobj <- GdsGenotypeReader("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/netCDF/subjects/OLGA_subj_geno.gds")
+genoData <- GenotypeData(gdsobj,scanAnnot=scan[scan$subj.plink,])
+
+# only include SNPs with MAF>0.01 and pass composite filter
+snp <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_HCHS_Custom_15041502_B3_all37_v25_AMS.RData"))
+table(snp$composite.filter) # want the TRUE ones
+snp.pruned <- snp$snpID[snp$chromosome==23&snp$MAF.study>0.01&snp$composite.filter]
+length(snp.pruned) # 37984
+
+rel <- pcrelate(genoData, pcMat=pcMat, training.set=unrel.set, scan.include=scanIncl, 
+                scan.block.size=13000, Xchr=TRUE, write.to.gds=TRUE,
+                snp.include=snp.pruned) # make as gds file
+
+# use helper function to make gdsMatrix
+library(gdsfmt)
+mypcrelate <- openfn.gds("tmp_pcrelate.gds")
+kcMat <- pcrelateMakeGRM(pcrelObj=mypcrelate)
+save(kcMat,file="olga_application/kcMat_xchr_xPC12adj_unrel3Deg_allSNPs_maf1_compositeFilt.RData")
+
+rm(list=ls())
+
+
+#####
+# 78. Make X chr KC mat with pruned SNPs, adj for PCs from #76.
+
+library(GWASTools)
+library(OLGApipeline)
+library(QCpipeline)
+library(MASS)
+library(GENESIS)
+
+setwd("/projects/users/caitlin/mlm_x")
+
+## run pc-relate adj for the pc's from above
+xPC <- get(load("olga_application/pca_prunedXsnps_10614unrel12771rel_unrelDeg3_kcMatSet.RData"))
+
+pcMat <- xPC$vectors[,c(1:2)]
+dim(pcMat) # 12771 2
+
+scan <- get(load("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/sample_snp_annot/SoL_scanAnnot_v54_AMS.RData"))
+head(pData(scan)) 
+
+unrel.set <- scan$scanID[scan$unrelated.pcair&!is.element(scan$gengrp6.outliers, "AsianOutliers")&
+                           scan$geno.cntl==0&scan$subj.plink]
+scanIncl <- scan$scanID[!is.element(scan$gengrp6.outliers, "AsianOutliers")&scan$subj.plink&scan$geno.cntl==0]
+
+head(unrel.set); head(scanIncl)
+length(unrel.set); length(scanIncl) # 10624 | 12784
+
+### need to exclude 13 people with an entirely missing x chr 
+# from chromosome.anomalies.csv file, they are study samples with x chr anomaly
+# thus, their entire x chr is filtered out. 
+
+chromAnoms <- read.csv("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/dbGaP/v1_original_consent/To_dbGaP/chromosome_anomalies/chromosome_anomalies.csv",
+                       header=TRUE,as.is=T)
+ids <- chromAnoms$scanID[chromAnoms$chromosome=="X"&chromAnoms$filter&chromAnoms$whole.chr&
+                           !is.element(substr(chromAnoms$SUBJECT_ID,1,2),"NA")]
+length(ids) # 13
+chromAnoms[is.element(chromAnoms$scanID,ids),] # perfect! exactly what we want
+
+length(scanIncl) # 12784
+scanIncl <- scanIncl[!is.element(scanIncl,ids)]
+length(scanIncl) # 12771
+
+unrel.set <- unrel.set[!is.element(unrel.set,ids)]
+length(unrel.set) # 10614
+
+# take these individs out of pcMat too
+pcMat <- pcMat[is.element(rownames(pcMat),scanIncl),]
+dim(pcMat) # 12771 2
+
+# make genoData object
+gdsobj <- GdsGenotypeReader("/projects/geneva/gcc-fs2/OLGA/genotype/phaseIa/netCDF/subjects/OLGA_subj_geno.gds")
+genoData <- GenotypeData(gdsobj,scanAnnot=scan[scan$subj.plink,])
+
+# include a pruned set of 3600 SNPs
+snp.pruned <- get(load("olga_application/snp_sel_xChr_ldPruned.RData"))
+head(snp.pruned); length(snp.pruned) # 3600
+
+rel <- pcrelate(genoData, pcMat=pcMat, training.set=unrel.set, scan.include=scanIncl, 
+                scan.block.size=13000, Xchr=TRUE, write.to.gds=TRUE,
+                snp.include=snp.pruned) # make as gds file
+
+# use helper function to make gdsMatrix
+library(gdsfmt)
+mypcrelate <- openfn.gds("tmp_pcrelate.gds")
+kcMat <- pcrelateMakeGRM(pcrelObj=mypcrelate)
+save(kcMat,file="olga_application/kcMat_xchr_xPC12adj_kcMatSamples_unrel3Deg_xchrPrunedSNPs.RData")
 
 rm(list=ls())

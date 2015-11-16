@@ -1,0 +1,7 @@
+\beamer@endinputifotherversion {3.07pt}
+\select@language {english}
+\beamer@sectionintoc {1}{LRT on autosomal / X chr SNPs}{4}{0}{1}
+\beamer@sectionintoc {2}{More results with X KC}{8}{0}{2}
+\beamer@sectionintoc {3}{Estimating KC using chromosome 19}{11}{0}{3}
+\beamer@sectionintoc {4}{Comparing X and chr 19 KCs}{12}{0}{4}
+\beamer@sectionintoc {5}{X chromosome SNP density}{13}{0}{5}
