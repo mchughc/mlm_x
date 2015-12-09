@@ -93,6 +93,14 @@
 # 76. Rerun PC-AiR, PC-Relate iterations w same KC mat set of individuals
 # 77. Make X chr KC mat with different SNP set
 # 78. Make X chr KC mat with pruned SNPs, adj for PCs from #76.
+# 79. Remake CAnD OLGA plots excl non-param CAnD results
+
+# 80. Follow up on MLM-X RBC hits chr 6,7,16,X
+# 81. CAnD on autosomes using local ancestry estimates - new CAnD method
+# 82. Perform CAnD and pooled t-test on local ancestry estimates by background group - new CAnD method
+# 83. Parse CAnD results - new CAnD method
+# 84. Genome-wide Manh of MLM-X, simple MLM X chr results in one png file
+
 
 
 #####
@@ -7397,11 +7405,12 @@ library(gridExtra); library(RGraphics)
 png("../Plots/autoPvals_mlmX_vsAutoModel.png",width=1080, height=760)
 mtxt <- ""
 par(mfrow=c(2,1),mar=c(5,5,4,3)+0.1, lwd=1.5, cex.lab=1.5, cex.main=1.5, cex.sub=1.5, oma=c(0,0,length(mtxt)+0.1,0))
-manhattanPlot(totalRes$pval, totalRes$chromosome)
+manhattanPlot(totalRes$pval, totalRes$chromosome, main="Simple MLM")
 mtext("A", side=3, line=0.75,adj=0,cex=2)
-manhattanPlot(mlmX$pval, mlmX$chromosome)
+manhattanPlot(mlmX$pval, mlmX$chromosome,main="MLM-X")
 mtext("B", side=3, line=0.75,adj=0,cex=2)
 dev.off()
+
 
 rm(list=ls())
 
@@ -8350,3 +8359,862 @@ kcMat <- pcrelateMakeGRM(pcrelObj=mypcrelate)
 save(kcMat,file="olga_application/kcMat_xchr_xPC12adj_kcMatSamples_unrel3Deg_xchrPrunedSNPs.RData")
 
 rm(list=ls())
+
+
+#####
+# 79. Remake CAnD OLGA plots excl non-param CAnD results
+
+cand_results <- get(load("cand_results_inclX_bonfCorr.RData"))
+# make a table of the x chr results
+cand <- cand_results[["CAnD_pvalue"]]
+nonP <- cand_results[["CAnD_nonP"]]
+pooled <- cand_results[["Pooled_t"]]
+
+library(xtable)
+r1=cand[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+r2=nonP[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+r3=pooled[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+
+r1$method="CAnD"
+r2$method="nonParam_CAnD"
+r3$method="pooled_ttest"
+
+library(ggplot2); library(reshape); library(RColorBrewer)
+res <- rbind(melt(r1,c("bkgrd","n","method")),melt(r2,c("bkgrd","n","method")),
+             melt(r3,c("bkgrd","n","method")))
+res$Ancestry[res$variable=="chr23.NAM"] <- "America"
+res$Ancestry[res$variable=="chr23.EUR"] <- "Europe"
+res$Ancestry[res$variable=="chr23.AFR"] <- "Africa"
+res$bkgrd=paste0(res$bkgrd,"\nn=",res$n)
+SET1 <- setNames(brewer.pal(9, "Set1"),
+                 c("red", "blue", "green", "purple", "orange", "brown", "pink", "gray"))
+levels <- c("Cuban\nn=1732", "Dominican\nn=897", "PuertoRican\nn=1703", "Mexican\nn=3635", 
+            "CentralAmerican\nn=1094", "SouthAmerican\nn=686", "Other/Unknown\nn=326")
+col <- setNames(SET1[c("green", "orange", "purple", "red", "blue","green", "gray")], levels)
+col["reference"] <- "gray80"
+
+res$bkgrd <- ordered(res$bkgrd,levels=levels)
+
+res$bg <- substr(res$bkgrd,start=1,stop=(regexpr("\n",res$bkgrd)-2))
+res$bg[res$bg=="CentralAmerica"] <- "CAm"
+res$bg[res$bg=="SouthAmerica"] <- "SAm"
+res$bg[res$bg=="PuertoRica"] <- "PR"
+res$bg[res$bg=="Other/Unknow"] <- "Unk"
+res$bg[res$bg=="Dominica"] <- "Dom"
+res$bg[res$bg=="Mexica"] <- "Mex"
+
+res$bg <- ordered(res$bg,levels=c("Cuba","Dom","PR","Mex","CAm","SAm","Unk"))
+
+# exclude non-param CAnD results
+res <- res[!is.element(res$method,"nonParam_CAnD"),]
+
+pdf("pvalues_CAnD_etal_olga_exclNonP.pdf",width=11,height=9)
+ggplot(res,aes(x=bg,y=-log10(value))) + geom_point(size=3,aes(color=factor(bkgrd)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Self-Identified Background") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "bottom",axis.text=element_text(size=13),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16),legend.text=element_text(size=14)) +  labs(y=expression(-log["10"]*"(pvalue)")) 
+dev.off()
+
+### remake the autosomal PR one, too
+
+## now take results, plot pvalues for all chrs for each self-id background in turn
+cand_results <- get(load("cand_results_autoOnly_bonfCorr.RData"))
+# make a table of the x chr results
+cand <- cand_results[["CAnD_pvalue"]]
+nonP <- cand_results[["CAnD_nonP_less"]]
+pooled <- cand_results[["Pooled_t"]]
+
+r1=cand
+r2=nonP
+r3=pooled
+
+r1$method="CAnD"
+r2$method="nonParam_CAnD"
+r3$method="pooled_ttest"
+
+res <- rbind(melt(r1,c("bkgrd","n","method")),melt(r2,c("bkgrd","n","method")),
+             melt(r3,c("bkgrd","n","method")))
+res$Ancestry <- NA
+res$Ancestry[grep("NAM",res$variable)] <- "America"
+res$Ancestry[grep("EUR",res$variable)] <- "Europe"
+res$Ancestry[grep("AFR",res$variable)] <- "Africa"
+res$bkgrd=paste0(res$bkgrd,"\nn=",res$n)
+SET1 <- setNames(brewer.pal(9, "Set1"),
+                 c("red", "blue", "green", "purple", "orange", "yellow", "brown", "pink", "gray"))
+levels <- c("Cuban\nn=1732", "Dominican\nn=897", "PuertoRican\nn=1703", "Mexican\nn=3635", 
+            "CentralAmerican\nn=1094", "SouthAmerican\nn=686", "Other/Unknown\nn=326")
+col <- setNames(SET1[c("green", "orange", "purple", "red", "yellow", "blue", "gray")], levels)
+col["reference"] <- "gray80"
+
+res$bkgrd <- factor(res$bkgrd)
+
+res$bg <- substr(res$bkgrd,start=1,stop=(regexpr("\n",res$bkgrd)-2))
+res$bg[res$bg=="CentralAmerica"] <- "CAm"
+res$bg[res$bg=="SouthAmerica"] <- "SAm"
+res$bg[res$bg=="PuertoRica"] <- "PR"
+res$bg[res$bg=="Other/Unknow"] <- "Unk"
+res$bg[res$bg=="Dominica"] <- "Dom"
+res$bg[res$bg=="Mexica"] <- "Mex"
+
+res$chr <- gsub("chr","",res$variable)
+res$chr <- gsub(".NAM","",res$chr)
+res$chr <- gsub(".EUR","",res$chr)
+res$chr <- gsub(".AFR","",res$chr)
+
+levels <- c(1:22)
+col <- setNames(c(SET1[c("green", "orange", "purple", "red", "blue","green", "pink")],
+                  SET1[c("green", "orange", "purple", "red",  "blue","green", "pink")],
+                  SET1[c("green", "orange", "purple", "red",  "blue","green", "pink")],
+                  SET1[c("green")]), levels)
+
+
+res <- res[!is.element(res$method,"nonParam_CAnD"),]
+
+resPl <- res[res$bg=="PR",]
+pdf("pvalues_CAnD_etal_PR_autos_exclNonP.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified Puerto Ricans, n=1703")
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 80. Follow up on MLM-X RBC hits chr 6,7,16,X
+
+library(GWASTools); library(QCpipeline)
+setwd("/projects/users/caitlin/olga_xchr_assoc/")
+
+fname <- "Assoc/assoc_316987"
+fnameTmp <- paste(fname,"_chr",1:23,".RData",sep="")
+assoc.tmp <- vector("list",23)
+
+for(i in 1:23){
+  assoc.tmp[[i]] <- getobj(fnameTmp[i])
+}
+
+totalRows <- sapply(assoc.tmp,function(x){nrow(x)})
+assoc.all <- data.frame(matrix(NA,nrow=sum(totalRows),ncol=ncol(assoc.tmp[[1]])))
+colnames(assoc.all) <- colnames(assoc.tmp[[1]])
+ct <- 1
+for(i in 1:23){
+  assoc.all[ct:(ct+totalRows[i]-1),] <- assoc.tmp[[i]]
+  ct <- ct+totalRows[i]
+}
+if (!("composite.filter" %in% names(assoc.all))) assoc.all$composite.filter <- TRUE
+
+mac.thresh <- 30
+assoc.all$maf.filt <- assoc.all$effN > mac.thresh
+assoc.all$maf2.filt <- assoc.all$effN > 2*mac.thresh
+n <- max(assoc.all$n, na.rm=T)
+n
+
+# rough MAF cutoff for plot titles
+maf.eff <- format(quadSolveMAF(mac.thresh, n), digits=3)
+maf2.eff <- format(quadSolveMAF(2*mac.thresh, n), digits=3)
+
+
+## chr 6 hits
+assoc.all[assoc.all$chromosome==6&assoc.all$maf.filt&assoc.all$composite.filter&
+            -log10(assoc.all$pval)>7,]
+# position is around 135419042
+# snp id 11414641 is the 'index snp'
+# gene AHI1,  chr6q23.3 position: 135283972-135497765
+# This gene is apparently required for both cerebellar and cortical development in humans. 
+# This gene mutations cause specific forms of Joubert syndrome-related disorders. 
+# Joubert syndrome (JS) is a recessively inherited developmental brain disorder with several identified causative chromosomal loci. 
+# Alternatively spliced transcript variants encoding different isoforms have been identified. [provided by RefSeq, Oct 2008].
+
+# also 2 SNPs around 109613252
+# gene AK9
+# chr6q21 position:109492856-109691212
+# AK9 (Adenylate Kinase 9) is a Protein Coding gene; Involved in maintaining the homeostasis of cellular nucleotides by catalyzing 
+# the interconversion of nucleoside phosphates. Has both nucleoside monophosphate and diphosphate kinase activities. 
+# Catalyzes the phosphorylation of AMP, dAMP, CMP and dCMP with ATP as phosphate donor and of CMP with GTP as phosphate donor. 
+# Also catalyzes the production of ATP, CTP, GTP, UTP, dATP, dCTP, dGTP and TTP from the corresponding diphosphate substrates with 
+# either ATP or GTP as phosphate donor
+
+
+## chr 7 hit
+assoc.all[assoc.all$chromosome==7&assoc.all$maf.filt&assoc.all$composite.filter&
+            -log10(assoc.all$pval)>7,]
+
+# there are 2 regions that have 3 hits each
+# first set of hits are not in a gene: position 50427982
+# second set are: position 100235970
+# gene GATS; chr7q22.1 position: 100200655-100272232
+# GATS (GATS, Stromal Antigen 3 Opposite Strand) is a Protein Coding gene. 
+# Among its related pathways are Gastric cancer network 1.
+
+
+## chr 16 hit
+sum(assoc.all$chromosome==16&assoc.all$maf.filt&assoc.all$composite.filter&
+  -log10(assoc.all$pval)>7) # 225
+which.min(assoc.all$pval[assoc.all$chromosome==16&assoc.all$maf.filt&assoc.all$composite.filter&
+            -log10(assoc.all$pval)>7]) # 50
+sm <- assoc.all[assoc.all$chromosome==16&assoc.all$maf.filt&assoc.all$composite.filter&
+                       -log10(assoc.all$pval)>7,]
+sm[50,]
+
+# hits ranging from chr 16 84780-683616
+# from ucsc genome browser in that region on chr 16, genes are:
+# MPRL3, MPG, LUC7L, RGS11, NME4, RAB40C, 
+
+# position of index SNP is 223447, in LUC7L
+# gene LUC7L, chr16p13.3, position: 188971-229450
+
+# also, hits in gene NPRL3
+# chr16p13.3 position: 85805-138698
+
+# then hits in ITFG3
+# chr16p13.3 position: 234802-268971
+
+# then hits in RGS11
+# chr16p13.3 position: 268301-275943
+
+# then hits in PDIA2
+# chr16p13.3 position: 283118-287209
+
+# then hits in AXIN1
+# chr16p13.3 position: 287440-352676
+
+# then hits in DECR2
+# chr16p13.3 position: 401858-412487
+
+# then hits in RAB11FIP3
+# chr16p13.3 position: 425668-522481
+
+# CAPN15
+# chr16p13.3 position: 527856-554636
+
+# PIGQ
+# chr16p13.3 position: 569968-584136
+
+# RAB40C
+# chr16p13.3 position: 590077-629273
+
+# JMJD8
+# chr16p13.3 position: 681667-684439
+
+
+
+## chr X hit
+assoc.all[assoc.all$chromosome=="X"&assoc.all$maf.filt&assoc.all$composite.filter&
+            -log10(assoc.all$pval)>7,]
+
+# hits in region: 153116006 - 154905080
+
+
+
+#####
+# 81. CAnD on autosomes using local ancestry estimates - new CAnD method
+
+##
+# now we can do CAnD on the local ancestry proportions
+# want to stratify by background group
+
+install.packages("~/CAnD_1.1.2.tar.gz", repos = NULL, type = "source")
+library(CAnD)
+library(GWASTools)
+library(readr); library(tidyr)
+library(reshape); library(ggplot2)
+
+# compare with the set of samples from admixture plots on the server
+oldRes <- getobj("admix_xchr_aftermerge.RData")
+res <- getobj("olga_admixture_results.RData")
+
+sum(is.element(oldRes$scanID,res$scanID)) # 10642
+sum(!is.element(res$scanID,oldRes$scanID)) # 84
+
+res <- merge(res,oldRes,by="scanID",all.y=TRUE)
+
+res <- res[res$pop=="-",]
+res <- res[res$unrelated.pcair.deg4,]
+dim(res) # 10073 78
+
+# first do by all samples together
+afrCols <- seq(from=6,to=73,by=3)
+colnames(res)[afrCols]
+afr <- CAnD(res[,afrCols])
+colnames(res)[afrCols-1]
+eur <- CAnD(res[,(afrCols-1)])
+colnames(res)[afrCols+1]
+nam <- CAnD(res[,(afrCols+1)])
+
+res$AFR.auto <- rowMeans(res[,afrCols[2:23]])
+res$EUR.auto <- rowMeans(res[,(afrCols-1)[2:23]])
+res$NAM.auto <- rowMeans(res[,(afrCols+1)[2:23]])
+
+t.test(res$AFR.x,res$AFR.auto)$p.value # 3.369035e-08
+t.test(res$AFR.x,res$AFR.auto,paired=TRUE)$p.value # 7.641825e-33
+
+t.test(res$EUR.x,res$EUR.auto)$p.value # 1.644846e-169
+t.test(res$EUR.x,res$EUR.auto,paired=TRUE)$p.value # 0
+
+t.test(res$NAM.x,res$NAM.auto)$p.value # 5.53147e-98
+t.test(res$NAM.x,res$NAM.auto,paired=TRUE)$p.value # 0
+
+plotPvals(nam,title="Native American CAnD Results")
+# wow, just way off the charts
+
+# do CAnD but excl x chr
+afrA <- CAnD(res[,(afrCols)[2:23]])
+colnames(res)[(afrCols-1)[2:23]]
+eurA <- CAnD(res[,(afrCols-1)[2:23]])
+colnames(res)[(afrCols+1)[2:23]]
+namA <- CAnD(res[,(afrCols+1)[2:23]])
+
+# now stratify by bkgrd value
+table(res$bkgrd)
+#CentralAmerican           Cuban       Dominican         Mexican           Other     PuertoRican 
+#           1094            1732             897            3635             306            1703 
+#SouthAmerican         Unknown 
+#          686              20 
+
+eurCols <- afrCols-1
+namCols <- afrCols+1
+
+res$bkgrd[res$bkgrd=="Unknown"] <- "Other/Unknown"
+res$bkgrd[res$bkgrd=="Other"] <- "Other/Unknown"
+
+subgrpRes <- data.frame("bkgrd"=unique(res$bkgrd),"n"=NA)
+newCols <- data.frame(matrix(NA,nrow=nrow(subgrpRes),ncol=23*3))
+colnames(newCols) <- paste0(paste0("chr",c(23,1:22)),rep(c(".NAM",".EUR",".AFR"),each=23))
+subgrpRes <- cbind(subgrpRes,newCols)
+colnames(subgrpRes)
+
+for(i in 1:nrow(subgrpRes)){
+  pop <- subgrpRes$bkgrd[i]
+  subgrpRes$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  subgrpRes[i,3] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))[1]
+  subgrpRes[i,4:25] <- pValues(CAnD(res[res$bkgrd==pop,namCols[2:23]]))
+  
+  subgrpRes[i,26] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))[1]
+  subgrpRes[i,27:48] <- pValues(CAnD(res[res$bkgrd==pop,eurCols[2:23]]))
+  
+  subgrpRes[i,49] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))[1]
+  subgrpRes[i,50:71] <- pValues(CAnD(res[res$bkgrd==pop,afrCols[2:23]]))  
+}
+# so the x chr is x vs autosomes, each autosome is that chr vs all other autosomes
+
+# plot these results
+# facet wrap for each ancestral subpop
+# on the x axis have each chromosome
+# on the y axis the -log10(pvalue), where the plotting colors are by bkgrd group, so 6 points per x-axis value
+
+melted <- melt(subgrpRes,id.vars=c("bkgrd","n"))
+melted$Ancestry <- substr(melted$variable,start=regexpr("\\.",melted$variable)+1,stop=nchar(as.character(melted$variable)))
+melted$Chromosome <- substr(melted$variable,start=regexpr("chr",melted$variable)+3,stop=regexpr("\\.",melted$variable)-1)
+
+#melted$Chromosome[melted$Chromosome==23] <- "X"
+melted$Ancestry[melted$Ancestry=="NAM"] <- "America"
+melted$Ancestry[melted$Ancestry=="EUR"] <- "Europe"
+melted$Ancestry[melted$Ancestry=="AFR"] <- "Africa"
+
+melted$bkgrd <- paste0(melted$bkgrd,"\nn=",melted$n)
+cols.all <- setNames(c("red","green","gold","blue","gray","magenta","brown"),unique(melted$bkgrd))
+
+melted$pch <- 1
+melted$pch[-log10(melted$value)>30] <- 2
+melted$value[-log10(melted$value)>30] <- 1e-29
+
+ggplot(melted,aes(x=as.integer(Chromosome),y=-log10(value),fill=bkgrd)) +geom_point(aes(color=bkgrd,shape=factor(pch)))+
+  facet_wrap(~Ancestry,nrow=3)+xlab("Chromosome")+theme_bw()+coord_cartesian(ylim=c(-1,30))+
+  geom_hline(yintercept=1.30,size=0.7,color="gray")+scale_color_manual(values=cols.all)
+ggsave("CAnD_solResults.pdf", width=11, height=8)
+
+rm(list=ls())
+
+
+#####
+# 82. Perform CAnD and pooled t-test on local ancestry estimates by background group
+
+install.packages("~/CAnD_1.1.2.tar.gz", repos = NULL, type = "source")
+library(CAnD)
+library(GWASTools)
+source("CAnD_pooled.R")
+
+res <- getobj("local_ancestry_byChr.RData")
+scan <- getobj("admix_xchr_aftermerge.RData")
+colnames(scan)[3:5] <- c("AFR.x","NAM.x","EUR.x")               
+# merge in admixture results for x chr since don't have local ancestry estimates
+res <- merge(res,scan,by="scanID")
+
+res$bkgrd[is.element(res$bkgrd,c("Other","Unknown"))] <- "Other/Unknown"
+
+## need to subset so that only unrel samples are included
+unrel <- getobj("unrelated_pcair_deg4.RData")
+
+sum(is.element(res$scanID,unrel)) # 10073
+sum(!is.element(res$scanID,unrel)) # 569
+
+res <- res[is.element(res$scanID,unrel),]
+
+# get avg local ancestry across the autosomes
+colnames(res)
+afrCols <- 24:45
+colnames(res)[afrCols]
+res$AFR.auto <- rowMeans(res[,afrCols])
+
+eurCols <- 2:23
+colnames(res)[eurCols]
+res$EUR.auto <- rowMeans(res[,eurCols])
+
+namCols <- 46:67
+colnames(res)[namCols]
+res$NAM.auto <- rowMeans(res[,namCols])
+
+
+## get CAnD pvalues, also pooled t-test pvalues
+# make a table of the results
+subgrpRes <- data.frame("bkgrd"=unique(res$bkgrd),"n"=NA)
+newCols <- data.frame(matrix(NA,nrow=nrow(subgrpRes),ncol=23*3))
+colnames(newCols) <- paste0(paste0("chr",c(23,1:22)),rep(c(".NAM",".EUR",".AFR"),each=23))
+subgrpRes <- cbind(subgrpRes,newCols)
+colnames(subgrpRes)
+
+namCols <- c(70,46:67)
+eurCols <- c(71,2:23)
+afrCols <- c(69,24:45)
+
+namAt <- c(70,74)
+eurAt <- c(71,73)
+afrAt <- c(69,72)
+
+colnames(res)[namCols]; colnames(res)[eurCols]; colnames(res)[afrCols]
+pooledres <- subgrpRes
+
+param_diff <- function(tmp){
+  t.test(tmp[,1],tmp[,2],paired=TRUE)$p.value
+}
+
+pooled_diff <- function(tmp){
+  t.test(tmp[,1],tmp[,2],paired=FALSE)$p.value
+}
+
+for(i in 1:nrow(subgrpRes)){
+  pop <- subgrpRes$bkgrd[i]
+  subgrpRes$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #subgrpRes[i,3] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))[1]
+  subgrpRes[i,3:25] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))
+  subgrpRes[i,3] <- param_diff(res[res$bkgrd==pop,namAt])
+  
+  #subgrpRes[i,26] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))[1]
+  subgrpRes[i,26:48] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))
+  subgrpRes[i,26] <- param_diff(res[res$bkgrd==pop,eurAt])
+  
+  #subgrpRes[i,49] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))[1]
+  subgrpRes[i,49:71] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))  
+  subgrpRes[i,49] <- param_diff(res[res$bkgrd==pop,afrAt])
+  
+  #
+  pooledres$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #pooledres[i,3] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))[1]
+  pooledres[i,3:25] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))
+  pooledres[i,3] <- pooled_diff(res[res$bkgrd==pop,namAt])
+  
+  #pooledres[i,26] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))[1]
+  pooledres[i,26:48] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))
+  pooledres[i,26] <- pooled_diff(res[res$bkgrd==pop,eurAt])
+  
+  #pooledres[i,49] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))[1]
+  pooledres[i,49:71] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))  
+  pooledres[i,49] <- pooled_diff(res[res$bkgrd==pop,afrAt])
+}
+
+
+
+# x vs autos isn't bonf corrected
+# autos is just autos vs other autos, IS bonf corrected
+
+cbind(subgrpRes[,c(3,26,49)],pooledres[,c(3,26,49)])
+cand_results <- list("CAnD_pvalue"=subgrpRes,"Pooled_t"=pooledres)
+save(cand_results,file="cand_results_newMethod_inclX_bonfCorr.RData")
+
+# can run a sens analysis where the autosomes are simply looked at against the autosomes, ie excl the x
+subgrpRes <- data.frame("bkgrd"=unique(res$bkgrd),"n"=NA)
+newCols <- data.frame(matrix(NA,nrow=nrow(subgrpRes),ncol=22*3))
+colnames(newCols) <- paste0(paste0("chr",c(1:22)),rep(c(".NAM",".EUR",".AFR"),each=22))
+subgrpRes <- cbind(subgrpRes,newCols)
+colnames(subgrpRes)
+
+namCols <- c(46:67)
+eurCols <- c(2:23)
+afrCols <- c(24:45)
+
+colnames(res)[namCols]; colnames(res)[eurCols]; colnames(res)[afrCols]
+nonPresL <- subgrpRes
+pooledres <- subgrpRes
+
+for(i in 1:nrow(subgrpRes)){
+  pop <- subgrpRes$bkgrd[i]
+  subgrpRes$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #subgrpRes[i,3] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))[1]
+  subgrpRes[i,3:24] <- pValues(CAnD(res[res$bkgrd==pop,namCols]))
+  
+  #subgrpRes[i,26] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))[1]
+  subgrpRes[i,25:46] <- pValues(CAnD(res[res$bkgrd==pop,eurCols]))
+  
+  #subgrpRes[i,49] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))[1]
+  subgrpRes[i,47:68] <- pValues(CAnD(res[res$bkgrd==pop,afrCols]))  
+
+  pooledres$n[i] <- sum(is.element(res$bkgrd,pop))
+  
+  #pooledres[i,3] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))[1]
+  pooledres[i,3:24] <- pValues(CAnD_pooled(res[res$bkgrd==pop,namCols]))
+  
+  #pooledres[i,26] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))[1]
+  pooledres[i,25:46] <- pValues(CAnD_pooled(res[res$bkgrd==pop,eurCols]))
+  
+  #pooledres[i,49] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))[1]
+  pooledres[i,47:68] <- pValues(CAnD_pooled(res[res$bkgrd==pop,afrCols]))  
+}
+# all of these are bonf corrected
+# these are the autosomal results, excluding the x chr from the pool
+
+auto_results <- list("CAnD_pvalue"=subgrpRes,"Pooled_t"=pooledres)
+save(auto_results,file="cand_results_newMethod_autoOnly_bonfCorr.RData")
+
+rm(list=ls())
+
+
+#####
+# 83. Parse CAnD results - new CAnD method
+
+cand_results <- get(load("cand_results_newMethod_inclX_bonfCorr.RData"))
+# make a table of the x chr results
+cand <- cand_results[["CAnD_pvalue"]]
+pooled <- cand_results[["Pooled_t"]]
+
+library(xtable)
+r1=cand[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+r3=pooled[,c("bkgrd","n","chr23.NAM","chr23.EUR","chr23.AFR")]
+
+r1$method="CAnD"
+r3$method="pooled_ttest"
+
+library(ggplot2); library(reshape); library(RColorBrewer)
+res <- rbind(melt(r1,c("bkgrd","n","method")),
+             melt(r3,c("bkgrd","n","method")))
+res$Ancestry[res$variable=="chr23.NAM"] <- "America"
+res$Ancestry[res$variable=="chr23.EUR"] <- "Europe"
+res$Ancestry[res$variable=="chr23.AFR"] <- "Africa"
+res$bkgrd=paste0(res$bkgrd,"\nn=",res$n)
+SET1 <- setNames(brewer.pal(9, "Set1"),
+                 c("red", "blue", "green", "purple", "orange", "brown", "pink", "gray"))
+levels <- c("Cuban\nn=1732", "Dominican\nn=897", "PuertoRican\nn=1703", "Mexican\nn=3635", 
+            "CentralAmerican\nn=1094", "SouthAmerican\nn=686", "Other/Unknown\nn=326")
+col <- setNames(SET1[c("green", "orange", "purple", "red", "blue","green", "gray")], levels)
+col["reference"] <- "gray80"
+
+res$bkgrd <- ordered(res$bkgrd,levels=levels)
+
+res$bg <- substr(res$bkgrd,start=1,stop=(regexpr("\n",res$bkgrd)-2))
+res$bg[res$bg=="CentralAmerica"] <- "CAm"
+res$bg[res$bg=="SouthAmerica"] <- "SAm"
+res$bg[res$bg=="PuertoRica"] <- "PR"
+res$bg[res$bg=="Other/Unknow"] <- "Unk"
+res$bg[res$bg=="Dominica"] <- "Dom"
+res$bg[res$bg=="Mexica"] <- "Mex"
+
+res$bg <- ordered(res$bg,levels=c("Cuba","Dom","PR","Mex","CAm","SAm","Unk"))
+
+pdf("pvalues_CAnD_newMethod_etal_olga.pdf",width=11,height=9)
+ggplot(res,aes(x=bg,y=-log10(value))) + geom_point(size=3,aes(color=factor(bkgrd)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Self-Identified Background") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                                          guide = guide_legend(title = "")) +
+  theme(legend.position = "bottom",axis.text=element_text(size=13),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16),legend.text=element_text(size=14)) +  labs(y=expression(-log["10"]*"(pvalue)")) 
+dev.off()
+
+## now take results, plot pvalues for all chrs for each self-id background in turn
+cand_results <- get(load("cand_results_newMethod_autoOnly_bonfCorr.RData"))
+# make a table of the x chr results
+cand <- cand_results[["CAnD_pvalue"]]
+pooled <- cand_results[["Pooled_t"]]
+
+r1=cand
+r3=pooled
+
+r1$method="CAnD"
+r3$method="pooled_ttest"
+
+res <- rbind(melt(r1,c("bkgrd","n","method")),
+             melt(r3,c("bkgrd","n","method")))
+res$Ancestry <- NA
+res$Ancestry[grep("NAM",res$variable)] <- "America"
+res$Ancestry[grep("EUR",res$variable)] <- "Europe"
+res$Ancestry[grep("AFR",res$variable)] <- "Africa"
+res$bkgrd=paste0(res$bkgrd,"\nn=",res$n)
+SET1 <- setNames(brewer.pal(9, "Set1"),
+                 c("red", "blue", "green", "purple", "orange", "yellow", "brown", "pink", "gray"))
+levels <- c("Cuban\nn=1732", "Dominican\nn=897", "PuertoRican\nn=1703", "Mexican\nn=3635", 
+            "CentralAmerican\nn=1094", "SouthAmerican\nn=686", "Other/Unknown\nn=326")
+col <- setNames(SET1[c("green", "orange", "purple", "red", "yellow", "blue", "gray")], levels)
+col["reference"] <- "gray80"
+
+res$bkgrd <- factor(res$bkgrd)
+
+res$bg <- substr(res$bkgrd,start=1,stop=(regexpr("\n",res$bkgrd)-2))
+res$bg[res$bg=="CentralAmerica"] <- "CAm"
+res$bg[res$bg=="SouthAmerica"] <- "SAm"
+res$bg[res$bg=="PuertoRica"] <- "PR"
+res$bg[res$bg=="Other/Unknow"] <- "Unk"
+res$bg[res$bg=="Dominica"] <- "Dom"
+res$bg[res$bg=="Mexica"] <- "Mex"
+
+res$chr <- gsub("chr","",res$variable)
+res$chr <- gsub(".NAM","",res$chr)
+res$chr <- gsub(".EUR","",res$chr)
+res$chr <- gsub(".AFR","",res$chr)
+
+levels <- c(1:22)
+col <- setNames(c(SET1[c("green", "orange", "purple", "red", "blue","green", "pink")],
+                  SET1[c("green", "orange", "purple", "red",  "blue","green", "pink")],
+                  SET1[c("green", "orange", "purple", "red",  "blue","green", "pink")],
+                  SET1[c("green")]), levels)
+
+resPl <- res[res$bg=="CAm",]
+pdf("pvalues_CAnD_newMethod_etal_CAm_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified Central Americans, n=1094")
+dev.off()
+
+resPl <- res[res$bg=="SAm",]
+pdf("pvalues_CAnD_newMethod_etal_SAm_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified South Americans, n=686")
+dev.off()
+
+resPl <- res[res$bg=="PR",]
+pdf("pvalues_CAnD_newMethod_etal_PR_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified Puerto Ricans, n=1703")
+dev.off()
+
+resPl <- res[res$bg=="Mex",]
+pdf("pvalues_CAnD_newMethod_etal_Mex_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified Mexicans, n=3635")
+dev.off()
+
+resPl <- res[res$bg=="Dom",]
+pdf("pvalues_CAnD_newMethod_etal_Dom_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified Dominicans, n=897")
+dev.off()
+
+resPl <- res[res$bg=="Cuba",]
+pdf("pvalues_CAnD_newMethod_etal_Cuba_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified Cubans, n=1732")
+dev.off()
+
+resPl <- res[res$bg=="Unk",]
+pdf("pvalues_CAnD_newMethod_etal_Unk_autos.pdf",width=11,height=9)
+ggplot(resPl,aes(x=as.integer(chr),y=-log10(value))) + geom_point(size=3,aes(color=factor(chr)))+
+  facet_grid(Ancestry~method)+theme_bw()+geom_hline(yintercept=-log10(0.05))+
+  xlab("Chromosome") + scale_color_manual(values=col,breaks=rev(names(col)),
+                                          guide = guide_legend(title = "")) +
+  theme(legend.position="none",axis.text=element_text(size=14),axis.title=element_text(size=18),title=element_text(size=20),
+        strip.text = element_text(size=16)) +  labs(y=expression(-log["10"]*"(pvalue)")) +
+  scale_x_continuous(breaks=c(1,5,10,15,20),labels=c(1,5,10,15,20)) +
+  ggtitle("Self-Identified Other/Unknown, n=326")
+dev.off()
+
+rm(list=ls())
+
+
+#####
+# 84. Genome-wide Manh of MLM-X, simple MLM X chr results in one png file
+
+library(QCpipeline); library(OLGApipeline)
+library(GWASTools)
+
+setwd("/projects/users/caitlin/olga_xchr_assoc/Assoc/")
+
+# read in xchr results, the autosomal model
+(mac.thresh <- 30)
+n <- 12490
+maf.eff <- format(quadSolveMAF(mac.thresh, n), digits=3)
+
+# read in assoc for every chromosome
+assc.all <- vector("list",23)
+for(i in 1:23){
+  assc.all[[i]] <- getobj(paste0("assoc_auto_316987_chr",i,".RData"))
+}
+
+totalRows <- sapply(assc.all,function(x){nrow(x)})
+assc <- data.frame(matrix(NA,nrow=sum(totalRows),ncol=ncol(assc.all[[1]])))
+colnames(assc) <- colnames(assc.all[[1]])
+ct <- 1
+for(i in 1:23){
+  assc[ct:(ct+totalRows[i]-1),] <- assc.all[[i]]
+  ct <- ct+totalRows[i]
+}
+
+#assc <- unlist(assc.all)
+
+filt.imp <- which(assc$type %in% 0)
+assc$composite.filter <- TRUE
+assc$maf.filt <- assc$effN > mac.thresh
+filt.obs <- which(assc$type %in% c(2,3))
+
+filt.obs.maf <- intersect(filt.obs, which(assc$maf.filt))
+# this is the filter i want
+
+assc <- assc[filt.obs.maf,]
+## assc holds the non mlm-x results
+
+##
+# do the same exercise for the other assoc test results
+# read in assoc for every chromosome
+assc.all <- vector("list",23)
+for(i in 1:23){
+  assc.all[[i]] <- getobj(paste0("assoc_316987_chr",i,".RData"))
+}
+
+totalRows <- sapply(assc.all,function(x){nrow(x)})
+mlmX <- data.frame(matrix(NA,nrow=sum(totalRows),ncol=ncol(assc.all[[1]])))
+colnames(mlmX) <- colnames(assc.all[[1]])
+ct <- 1
+for(i in 1:23){
+  mlmX[ct:(ct+totalRows[i]-1),] <- assc.all[[i]]
+  ct <- ct+totalRows[i]
+}
+
+filt.imp <- which(mlmX$type %in% 0)
+mlmX$composite.filter <- TRUE
+mlmX$maf.filt <- mlmX$effN > mac.thresh
+filt.obs <- which(mlmX$type %in% c(2,3))
+
+filt.obs.maf <- intersect(filt.obs, which(mlmX$maf.filt))
+# this is the filter i want
+
+mlmX <- mlmX[filt.obs.maf,]
+
+# make a plot of each pval comparing mlm-x to simple mlm-x, across the autosomes
+library(ggplot2); library(tidyr); library(readr); library(reshape); library(dplyr)
+library(gridExtra); library(RGraphics)
+
+png("../Plots/manh_genomeWide_Pvals_mlmX_vsAutoModel.png",width=1080, height=760)
+mtxt <- ""
+par(mfrow=c(2,1),mar=c(5,5,4,3)+0.1, lwd=1.5, cex.lab=1.5, cex.main=1.5, cex.sub=1.5, oma=c(0,0,length(mtxt)+0.1,0))
+manhattanPlot(assc$pval, assc$chromosome, main="Simple MLM")
+mtext("A", side=3, line=0.75,adj=0,cex=2)
+manhattanPlot(mlmX$pval, mlmX$chromosome,main="MLM-X")
+mtext("B", side=3, line=0.75,adj=0,cex=2)
+dev.off()
+
+# now make qq plots, genome-wide
+allequal(mlmX$snpID,assc$snpID) # TRUE
+mlmX$method <- "MLM-X"
+assc$method <- "simple MLM"
+
+res <- rbind(mlmX[,c("chromosome","snpID","method","pval")],
+             assc[,c("chromosome","snpID","method","pval")])
+res <- tbl_df(res)
+
+res <- mutate(res,pval_10=-log10(pval))
+res_method <- group_by(res,method)
+res_method <- mutate(res_method,n=n())
+n <- nrow(mlmX)
+a <- 1:n
+b <- a/n
+x <- -log10(b)
+res_method <- mutate(res_method,spval=-log10(sort(pval)))
+res_method <- mutate(res_method,x=x)
+
+# make a plot of each pval comparing mlm-x to simple mlm-x, across the autosomes
+
+# get lambda values first
+calculateLambda(mlmX$Stat,df=1) # 1.048324
+calculateLambda(assc$Stat,df=1) # 1.050929
+
+txt <- paste("lambda[GC] == 1.051~simple~MLM")
+txt2 <- paste("lambda[GC] == 1.048~MLM-X")
+
+png("../Plots/genomeWideQQ_mlmX_vsAutoModel.png",width=1080,height=760)
+ggplot(res_method,aes(x,spval,color=method)) + geom_point(aes(color=method,name=" ")) +
+  xlab(expression(paste(-log[10],"(expected P)"))) +
+  ylab(expression(paste(-log[10], "(observed P)"))) +
+  theme_bw() + geom_abline(intercept=0) +
+  theme(axis.text=element_text(size=12),axis.title=element_text(size=18,face="bold"),
+        legend.text = element_text(size = 18),legend.key = element_rect(colour = "white")) +
+  annotate("text", x = 0.5, y = 16.8, label = txt,parse=TRUE,size=6) +
+  annotate("text", x = 0.42, y = 16, label = txt2, parse=TRUE,size=6) 
+dev.off()
+
+res$chromosome <- NULL; res$snpID <- NULL
+res$pval <- NULL
+res_spread <- spread(res,method,pval_10)
+colnames(res_spread)[2] <- "simpleMLM"
+res_spread$simpleMLM[is.na(res_spread$simpleMLM)] <- res_spread$simpleMLM[!is.na(res_spread$simpleMLM)]
+torm <- is.na(res_spread[,1])
+res_spread <- res_spread[!torm,]
+colnames(res_spread)[1] <- "MLMX"
+
+cor(-log10(mlmX$pval),-log10(assc$pval)) # 0.9967971
+txt <- "corr = 0.997"
+
+png("../Plots/genomeWidePvals_mlmX_vsAutoModel.png")
+ggplot(res_spread,aes(MLMX,simpleMLM)) + geom_point(aes(alpha=0.5)) + 
+  labs(y=expression(-log[10]*"(Simple MLM p-value)"), x=expression(-log[10]*"(MLM-X p-value)")) + 
+  geom_abline(intercept=0,slope=1) + theme_bw() + theme(legend.position="none") +
+  annotate("text",x=2,y=18,label=txt,parse=FALSE,size=6)
+dev.off()
+
+
+rm(list=ls())
+
+
+#####
