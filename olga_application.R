@@ -9210,9 +9210,22 @@ png("../Plots/genomeWidePvals_mlmX_vsAutoModel.png")
 ggplot(res_spread,aes(MLMX,simpleMLM)) + geom_point(aes(alpha=0.5)) + 
   labs(y=expression(-log[10]*"(Simple MLM p-value)"), x=expression(-log[10]*"(MLM-X p-value)")) + 
   geom_abline(intercept=0,slope=1) + theme_bw() + theme(legend.position="none") +
+  theme(axis.text=element_text(size=12),axis.title=element_text(size=18,face="bold"),
+        legend.text = element_text(size = 18),legend.key = element_rect(colour = "white")) +
   annotate("text",x=2,y=18,label=txt,parse=FALSE,size=6)
 dev.off()
 
+# look at a plot of the distribution of the difference between the -log10 pvalues
+diff <- res$pval_10[res$method=="MLM-X"]-res$pval_10[res$method=="simple MLM"]
+png("../Plots/genomeWidePvals_mlmX_vsAutoModel_diff.png")
+hist(diff,ylab=expression(-log[10]*"(MLM-X p-value)-"*-log[10]*"(Simple MLM p-value)"))
+abline(h=0)
+dev.off()
+
+summary(diff)
+#      Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
+#-1.1130000 -0.0202400 -0.0003617 -0.0007483  0.0194400  1.1890000 
+sd(diff) # 0.03680322
 
 rm(list=ls())
 
